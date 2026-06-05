@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.41
+        v1.8.42
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1893,23 +1893,44 @@ function updatePointageStats(){
 function renderPointage(){
   if(!currentEventId) return;
   const q=document.getElementById('pointage-search').value.toLowerCase().trim();
+
+  // ── MODE REPAS ──────────────────────────────────────────
+  if(modePointage==='repas'){
+    const data=getRepasData();
+    const filtered=q?data.filter(r=>(r.nom+' '+r.prenom).toLowerCase().includes(q)):data;
+    const nbMange=repas.filter(r=>r.evenement_id===currentEventId).length;
+    const grid=document.getElementById('pointage-grid');
+    if(!filtered.length){
+      grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🍽️</div><div>Aucun invité présent pour le repas.</div></div>';
+      return;
+    }
+    const stat='<div style="grid-column:1/-1;background:rgba(45,212,160,.06);border:1px solid rgba(45,212,160,.2);border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:13px;font-weight:600">🍽️ Repas distribués</span><span style="font-family:Bebas Neue,sans-serif;font-size:24px;color:var(--success)">'+nbMange+' / '+filtered.length+'</span></div>';
+    const cards=filtered.map(function(r){
+      const meta=[r.departement,r.matricule].filter(Boolean).map(esc).join(' · ')||'—';
+      const btn=r.a_mange
+        ?'<span class="badge badge-present">✅ Servi</span>'
+        :'<button class="btn-toggle absent" onclick="enregistrerRepas(''+r.id+'')">🍽️ Servir</button>';
+      const repasInfo=r.a_mange?'<div class="p-arrive">🍽️ Repas pris</div>':'';
+      return '<div class="pointage-card '+(r.a_mange?'is-present':'')+'"><div><div class="p-name">'+esc(r.nom)+' '+esc(r.prenom)+'</div><div class="p-meta">'+meta+'</div>'+repasInfo+'</div>'+btn+'</div>';
+    });
+    grid.innerHTML=stat+cards.join('');
+    return;
+  }
+
+  // ── MODE ENTRÉE ─────────────────────────────────────────
   const data=getInvitedUsers();
   if(!data.length){
-    document.getElementById('pointage-grid').innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👥</div><div>Aucun invité.<br><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openInviteModal('${currentEventId}')">Gérer les invités</button></div></div>`;
+    document.getElementById('pointage-grid').innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👥</div><div>Aucun invité.<br><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openInviteModal(''+currentEventId+'')">Gérer les invités</button></div></div>';
     return;
   }
   const filtered=q?data.filter(r=>(r.nom+' '+r.prenom).toLowerCase().includes(q)):data;
-  document.getElementById('pointage-grid').innerHTML=filtered.map(r=>`
-    <div class="pointage-card ${r.present?'is-present':''}">
-      <div>
-        <div class="p-name">${esc(r.nom)} ${esc(r.prenom)}</div>
-        <div class="p-meta">${[r.departement,r.matricule].filter(Boolean).map(esc).join(' · ')||'—'}</div>
-        ${r.present&&r.horraire_arrivee?`<div class="p-arrive">✓ ${r.horraire_arrivee.slice(0,5)}</div>`:''}
-      </div>
-      <button class="btn-toggle ${r.present?'present':'absent'}" onclick="togglePresence('${r.id}',${r.present},'${r.presence_id||''}')">
-        ${r.present?'✓ Présent':'Marquer présent'}
-      </button>
-    </div>`).join('');
+  const cards=filtered.map(function(r){
+    const meta=[r.departement,r.matricule].filter(Boolean).map(esc).join(' · ')||'—';
+    const arrive=r.present&&r.horraire_arrivee?'<div class="p-arrive">✓ '+r.horraire_arrivee.slice(0,5)+(r.pointe_par?' · par '+esc(r.pointe_par):'')+' </div>':'';
+    const btn='<button class="btn-toggle '+(r.present?'present':'absent')+'" onclick="togglePresence(''+r.id+'','+r.present+',''+(r.presence_id||'')+'')">'+(r.present?'✓ Présent':'Marquer présent')+'</button>';
+    return '<div class="pointage-card '+(r.present?'is-present':'')+'"><div><div class="p-name">'+esc(r.nom)+' '+esc(r.prenom)+'</div><div class="p-meta">'+meta+'</div>'+arrive+'</div>'+btn+'</div>';
+  });
+  document.getElementById('pointage-grid').innerHTML=cards.join('');
 }
 
 async function togglePresence(userId,current,presenceId){
