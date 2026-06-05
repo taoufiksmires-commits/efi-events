@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.56
+        v1.8.57
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1083,7 +1083,8 @@ const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-
 let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[], repas=[];
 let currentPointeur = null; // objet pointeur complet
 let currentParkingId = null; // parking sélectionné par le pointeur
-let modePointage = 'entree'; // 'entree' ou 'repas'
+let modePointage = 'entree';
+var pendingEventId = null; // événement en attente de sélection mode // 'entree' ou 'repas'
 let currentFilter = 'tous';
 const ADMIN_EMAIL = 'taoufik.smires@efiautomotive.com';
 const ADMIN_PWD = 'admin123';
@@ -2999,7 +3000,7 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
 
 <script>
 var modeActuel = 'entree';
-var pendingEventId = null;
+// pendingEventId déclaré dans script principal
 
 // Intercepter le clic sur Pointer pour afficher le choix
 var _selectEventOriginal = selectEvent;
