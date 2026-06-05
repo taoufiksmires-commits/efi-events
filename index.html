@@ -308,7 +308,7 @@ td{padding:10px 12px;color:var(--text)}
 <body>
 
 <!-- ECRAN AUTH -->
-<div id="auth-screen" style="position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center">
+<div id="auth-screen" style="position:fixed;inset:0;z-index:500;background:var(--bg);display:none;align-items:center;justify-content:center">
   <div style="width:420px;max-width:96vw">
 
     <!-- LOGO -->
@@ -646,7 +646,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.23
+        v1.8.24
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -983,7 +983,16 @@ window.onload = () => {
       } else {
         showApp();
       }
-    } catch(e) { localStorage.removeItem('efi_pointeur'); sessionStorage.removeItem('efi_pointeur'); }
+    } catch(e) {
+      localStorage.removeItem('efi_pointeur');
+      sessionStorage.removeItem('efi_pointeur');
+      // Afficher l'écran de connexion
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+  } else {
+    // Pas de session — afficher connexion
+    document.getElementById('auth-screen').style.display = 'flex';
+    setTimeout(() => document.getElementById('li-email')?.focus(), 300);
   }
 
 };
