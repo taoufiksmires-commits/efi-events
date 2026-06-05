@@ -1,0 +1,23 @@
+{
+  "name": "EFI Events",
+  "short_name": "EFI Events",
+  "description": "Gestion des pr\u00e9sences EFI Automotive",
+  "start_url": "/efi-events/",
+  "scope": "/efi-events/",
+  "display": "standalone",
+  "background_color": "#0a0a12",
+  "theme_color": "#e8251a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
