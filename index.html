@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.50
+        v1.8.51
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -813,17 +813,7 @@ td{padding:10px 12px;color:var(--text)}
           <div class="stat-card"><div class="stat-label">Absents</div><div class="stat-value orange" id="p-absent">—</div></div>
           <div class="stat-card"><div class="stat-label">Taux</div><div class="stat-value" id="p-taux">—</div></div>
         </div>
-        <!-- Sélecteur mode pointage -->
-        <div style="display:flex;gap:8px;margin-bottom:14px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:6px">
-          <button id="mode-entree-btn" onclick="setModePointage('entree')" style="flex:1;padding:10px;border-radius:7px;border:none;cursor:pointer;font-weight:700;font-size:12px;background:var(--accent);color:#fff;transition:all .2s">
-            🚪 Entrée
-          </button>
-          <button id="mode-repas-btn" onclick="setModePointage('repas')" style="flex:1;padding:10px;border-radius:7px;border:none;cursor:pointer;font-weight:700;font-size:12px;background:transparent;color:var(--muted);transition:all .2s">
-            🍽️ Repas
-          </button>
-        </div>
-
-        <!-- MODAL NFC au premier accès -->
+                <!-- MODAL NFC au premier accès -->
         <div id="nfc-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(5,5,15,.88);align-items:center;justify-content:center;backdrop-filter:blur(6px)">
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 28px;width:340px;max-width:92vw;text-align:center;position:relative">
             <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--success));border-radius:16px 16px 0 0"></div>
