@@ -1137,14 +1137,31 @@ async function silentRefresh() {
 function refreshAll(){renderDashboard();renderEvents();renderUsers();populateExportSel();if(currentEventId)renderPointage();}
 
 // NAV
-function goPage(name,el){
+function goPage(name, el) {
+  navigateTo(name);
+}
+
+function navigateTo(name, pushState=true) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.aside-item').forEach(i=>i.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  el.classList.add('active');
+  document.querySelectorAll('.mobile-nav-item').forEach(i=>i.classList.remove('active'));
+  const page = document.getElementById('page-'+name);
+  if(page) page.classList.add('active');
+  // Sync sidebar
+  const sideItems = document.querySelectorAll('.aside-item');
+  const order = ['dashboard','evenements','pointage','users','export'];
+  const idx = order.indexOf(name);
+  if(idx>=0 && sideItems[idx]) sideItems[idx].classList.add('active');
+  // Sync bottom nav
+  const navItems = document.querySelectorAll('.mobile-nav-item');
+  if(idx>=0 && navItems[idx]) navItems[idx].classList.add('active');
   const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte'};
   document.getElementById('top-title').innerHTML=`<span>${titles[name]||name}</span>`;
   if(name==='moncompte') renderMonCompte();
+  if(name==='evenements'||name==='dashboard') { renderEvents(); renderDashboard(); }
+  // Pousser dans l'historique
+  if(pushState) history.pushState({page: name}, '', '#'+name);
+  window.scrollTo(0,0);
 }
 
 // DASHBOARD
@@ -1278,10 +1295,14 @@ function selectEvent(id){
   document.getElementById('pointage-event-title').textContent=ev?ev.nom:'—';
   document.getElementById('pointage-event-info').textContent=ev?[ev.date?fmtDate(ev.date):'',ev.lieu||''].filter(Boolean).join(' · '):'';
   updatePointageStats();renderPointage();
+  history.pushState({page:'pointage', eventId:id}, '', '#pointage');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.aside-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item').forEach(i=>i.classList.remove('active'));
   document.getElementById('page-pointage').classList.add('active');
   document.querySelectorAll('.aside-item')[2].classList.add('active');
+  const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+  if(mobileNavItems[2]) mobileNavItems[2].classList.add('active');
   document.getElementById('top-title').innerHTML=`🎯 <span>${ev?esc(ev.nom):'Pointage'}</span>`;
 }
 
@@ -1751,17 +1772,7 @@ function exportPrint(){
 }
 
 function mobileNav(name, el) {
-  // Sync avec la sidebar
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.aside-item').forEach(i=>i.classList.remove('active'));
-  document.querySelectorAll('.mobile-nav-item').forEach(i=>i.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  el.classList.add('active');
-  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte'};
-  document.getElementById('top-title').innerHTML=`<span>${titles[name]||name}</span>`;
-  if(name==='moncompte') renderMonCompte();
-  if(name==='pointage'||name==='evenements') loadData();
-  window.scrollTo(0,0);
+  navigateTo(name);
 }
 
 function installPWA() {
