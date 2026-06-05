@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EFI Events — Gestion Présences</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a12;--surface:#10101c;--border:#1e1e32;--accent:#e8251a;--accent2:#ff6b35;--text:#e8e8f0;--muted:#6b6b80;--success:#2dd4a0;--danger:#e8251a;--radius:8px;--sidebar:240px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.app-layout{display:flex;flex:1}
+aside{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.aside-logo{padding:16px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-img{width:40px;height:40px;object-fit:contain;border-radius:6px;background:#fff;padding:3px;flex-shrink:0}
+.logo-text{display:flex;flex-direction:column;line-height:1.1}
+.logo-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent)}
+.logo-sub{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.aside-section{padding:14px 12px 6px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.aside-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:8px;margin:2px 8px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;border:1px solid transparent}
+.aside-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.aside-item.active{background:rgba(232,37,26,.12);color:var(--accent);border-color:rgba(232,37,26,.25)}
+.aside-item .icon{font-size:15px;width:20px;text-align:center}
+.aside-sync{margin-top:auto;padding:12px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+.sync-dot{display:inline-block;width:6px;height:6px;background:var(--success);border-radius:50%;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.main-content{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-width:0}
+.top-bar{padding:14px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(10,10,18,.92);backdrop-filter:blur(10px);position:sticky;top:0;z-index:50;gap:12px;flex-wrap:wrap}
+.top-bar-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--text)}
+.top-bar-title span{color:var(--accent)}
+.page{display:none;padding:26px;max-width:1200px;width:100%}
+.page.active{display:block}
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.4}
+.stat-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.stat-value{font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:1;color:var(--accent)}
+.stat-value.green{color:var(--success)}.stat-value.orange{color:#ff6b35}.stat-value.blue{color:#60a5fa}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.card-accent::before{content:'';display:block;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.card-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;color:var(--accent)}
+.card-body{padding:18px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+label{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:9px 12px;outline:none;transition:border-color .2s;width:100%}select{color:var(--text);background:#1e1e32}select option{background:#1e1e32;color:var(--text)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+textarea{resize:vertical;min-height:80px;line-height:1.5}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:12px;transition:all .2s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#c41d13;transform:translateY(-1px)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.btn-success{background:rgba(45,212,160,.15);color:var(--success);border:1px solid rgba(45,212,160,.3)}.btn-success:hover{background:rgba(45,212,160,.25)}
+.btn-danger{background:rgba(232,37,26,.12);color:var(--danger);border:1px solid rgba(232,37,26,.25)}.btn-danger:hover{background:rgba(232,37,26,.22)}
+.btn-sm{padding:6px 12px;font-size:11px}
+.btn-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead tr{background:rgba(255,255,255,.03);border-bottom:1px solid var(--border)}
+th{padding:10px 12px;text-align:left;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(30,30,50,.5);transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td{padding:10px 12px;color:var(--text)}
+.mono{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600}
+.badge-present{background:rgba(45,212,160,.15);color:var(--success);border:1px solid rgba(45,212,160,.3)}
+.badge-absent{background:rgba(232,37,26,.1);color:var(--accent);border:1px solid rgba(232,37,26,.2)}
+.badge-contrat{background:rgba(96,165,250,.1);color:#60a5fa;border:1px solid rgba(96,165,250,.2)}
+.badge-invited{background:rgba(255,107,53,.1);color:var(--accent2);border:1px solid rgba(255,107,53,.2)}
+.icon-btn{width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:11px;transition:all .12s;margin-right:2px}
+.icon-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.icon-btn.del:hover{background:rgba(232,37,26,.15);color:var(--danger);border-color:rgba(232,37,26,.3)}
+.icon-btn.edit:hover{background:rgba(232,37,26,.1);color:var(--accent);border-color:rgba(232,37,26,.25)}
+
+/* EVENT CARDS */
+.event-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;margin-bottom:20px}
+.event-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:all .2s;position:relative}
+.event-card:hover{border-color:rgba(232,37,26,.3);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.event-cover{width:100%;height:160px;object-fit:contain;display:block;background:#fff;padding:4px}
+.event-cover-placeholder{width:100%;height:160px;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.event-cover-placeholder::before{content:'';position:absolute;inset:0;background:url('https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png') center/60px no-repeat;opacity:.08}
+.event-cover-placeholder .ev-icon{font-size:40px;opacity:.3}
+.event-body{padding:16px}
+.event-badge{position:absolute;top:10px;right:10px;font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(45,212,160,.2);color:var(--success);border:1px solid rgba(45,212,160,.4);backdrop-filter:blur(4px)}
+.event-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;margin-bottom:6px;color:var(--text)}
+.event-meta{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px;margin-bottom:14px}
+.event-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* PHOTO UPLOAD */
+.photo-upload-zone{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.photo-upload-zone:hover,.photo-upload-zone.drag{border-color:var(--accent);background:rgba(232,37,26,.05)}
+.photo-upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.photo-preview{width:100%;height:180px;object-fit:contain;border-radius:8px;margin-top:10px;display:none;background:#f8f8f8}
+.photo-upload-icon{font-size:32px;margin-bottom:8px;opacity:.4}
+.photo-upload-text{font-size:12px;color:var(--muted)}
+
+/* POINTAGE */
+.search-big{font-size:15px;padding:12px 16px;border-radius:10px;margin-bottom:16px;width:100%}
+.pointage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.pointage-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:all .18s}
+.pointage-card.is-present{border-color:rgba(45,212,160,.35);background:rgba(45,212,160,.04)}
+.p-name{font-weight:600;font-size:13px;margin-bottom:2px}
+.p-meta{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+.p-arrive{font-size:10px;color:var(--success);margin-top:2px}
+.btn-toggle{padding:7px 13px;font-size:11px;font-weight:700;border-radius:7px;border:none;cursor:pointer;transition:all .18s}
+.btn-toggle.absent{background:rgba(232,37,26,.12);color:var(--accent);border:1px solid rgba(232,37,26,.3)}
+.btn-toggle.absent:hover{background:var(--accent);color:#fff}
+.btn-toggle.present{background:rgba(45,212,160,.15);color:var(--success);border:1px solid rgba(45,212,160,.3)}
+.btn-toggle.present:hover{background:rgba(232,37,26,.1);color:var(--danger);border-color:rgba(232,37,26,.25)}
+
+/* SCAN */
+.scan-zone{background:rgba(232,37,26,.04);border:2px dashed rgba(232,37,26,.2);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.scan-zone.flash{border-color:var(--success);background:rgba(45,212,160,.06);animation:sf .6s ease}
+.scan-zone.flash-err{border-color:var(--danger);background:rgba(232,37,26,.06)}
+@keyframes sf{0%,100%{box-shadow:none}50%{box-shadow:0 0 20px rgba(45,212,160,.3)}}
+.scan-result{font-size:12px;font-weight:600;min-height:18px;margin-top:4px}
+.scan-result.ok{color:var(--success)}.scan-result.err{color:var(--danger)}.scan-result.warn{color:var(--accent2)}
+
+.import-info{background:rgba(232,37,26,.05);border:1px solid rgba(232,37,26,.15);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.8}
+.import-info strong{color:var(--accent)}
+.search-input{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:7px 11px;outline:none}
+.search-input:focus{border-color:var(--accent)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(5,5,15,.9);align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px;width:620px;max-width:96vw;max-height:90vh;overflow-y:auto;position:relative}
+.modal::before{content:'';display:block;position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:14px 14px 0 0}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;margin-bottom:18px;color:var(--accent)}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+.modal-close:hover{color:var(--text)}
+
+/* INVITE */
+.invite-list{max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:10px}
+.invite-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid rgba(30,30,50,.5);font-size:12px}
+.invite-row:last-child{border-bottom:none}
+.invite-row:hover{background:rgba(255,255,255,.03)}
+.invite-row .name{font-weight:600}.invite-row .meta{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+.chk{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.dept-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.dept-chip{padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);transition:all .15s}
+.dept-chip:hover,.dept-chip.active{background:rgba(232,37,26,.1);border-color:rgba(232,37,26,.3);color:var(--accent)}
+.no-event-sel{background:rgba(232,37,26,.05);border:1px dashed rgba(232,37,26,.25);border-radius:10px;padding:24px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px}
+
+#toast{position:fixed;bottom:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:7px}
+.toast-item{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px 16px;font-size:12px;display:flex;align-items:center;gap:8px;animation:slideIn .25s ease;min-width:230px;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+.toast-item.success{border-left:3px solid var(--success)}.toast-item.error{border-left:3px solid var(--danger)}.toast-item.info{border-left:3px solid var(--accent2)}.toast-item.warn{border-left:3px solid #ff6b35}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+#loading-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(5,5,15,.8);align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#loading-overlay.show{display:flex}
+.loading-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 40px;text-align:center;color:var(--muted);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:8px;opacity:.4}
+@media(max-width:768px){aside{display:none}.main-content{margin-left:0}.page{padding:14px}.top-bar{padding:12px 16px}}
+</style>
+</head>
+<body>
+
+<!-- ECRAN AUTH -->
+<div id="auth-screen" style="position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center">
+  <div style="width:420px;max-width:96vw">
+
+    <!-- LOGO -->
+    <div style="text-align:center;margin-bottom:24px">
+      <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:56px;background:#fff;border-radius:10px;padding:5px;margin-bottom:12px" onerror="this.style.display='none'">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;color:var(--accent)">EFI Events</div>
+      <div style="font-size:12px;color:var(--muted)">Gestion des présences</div>
+    </div>
+
+    <!-- TABS -->
+    <div style="display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:18px;overflow:hidden">
+      <div id="tab-login-btn" onclick="switchAuthTab('login')" style="flex:1;padding:11px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;background:var(--accent);color:#fff;transition:all .2s">Connexion</div>
+      <div id="tab-signup-btn" onclick="switchAuthTab('signup')" style="flex:1;padding:11px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .2s">Inscription</div>
+    </div>
+
+    <!-- CARD -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div>
+
+      <!-- LOGIN -->
+      <div id="tab-login">
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+          <div class="form-group"><label>Email</label><input type="email" id="li-email" placeholder="vous@efi.com" onkeydown="if(event.key==='Enter')document.getElementById('li-pwd').focus()"></div>
+          <div class="form-group">
+            <label>Mot de passe</label>
+            <div style="position:relative">
+              <input type="password" id="li-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doEmailLogin()" style="padding-right:40px">
+              <span onclick="togglePwd('li-pwd',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted)">👁</span>
+            </div>
+          </div>
+        </div>
+        <div id="login-error" style="font-size:11px;color:var(--danger);margin-bottom:10px;display:none;background:rgba(232,37,26,.08);padding:8px 12px;border-radius:6px"></div>
+        <button class="btn btn-primary" onclick="doEmailLogin()" style="width:100%;justify-content:center;margin-bottom:12px">Se connecter →</button>
+        <div style="text-align:center">
+          <span onclick="switchAuthTab('reset')" style="font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">Mot de passe oublié ?</span>
+        </div>
+        <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          Compte admin : <strong style="color:var(--accent);font-family:'DM Mono',monospace">taoufik.smires@efiautomotive.com</strong>
+        </p>
+      </div>
+
+      <!-- SIGNUP -->
+      <div id="tab-signup" style="display:none">
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group"><label>Nom *</label><input type="text" id="su-nom" placeholder="Dupont"></div>
+            <div class="form-group"><label>Prénom *</label><input type="text" id="su-prenom" placeholder="Jean"></div>
+          </div>
+          <div class="form-group"><label>Email *</label><input type="email" id="su-email" placeholder="vous@efi.com"></div>
+          <div class="form-group">
+            <label>Mot de passe *</label>
+            <div style="position:relative">
+              <input type="password" id="su-pwd" placeholder="Min. 6 caractères" style="padding-right:40px">
+              <span onclick="togglePwd('su-pwd',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted)">👁</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Confirmer le mot de passe *</label>
+            <div style="position:relative">
+              <input type="password" id="su-pwd2" placeholder="Répéter le mot de passe" onkeydown="if(event.key==='Enter')doSignup()" style="padding-right:40px">
+              <span onclick="togglePwd('su-pwd2',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted)">👁</span>
+            </div>
+          </div>
+        </div>
+        <div id="signup-error" style="font-size:11px;color:var(--danger);margin-bottom:10px;display:none;background:rgba(232,37,26,.08);padding:8px 12px;border-radius:6px"></div>
+        <div id="signup-success" style="font-size:12px;color:var(--success);background:rgba(45,212,160,.08);border:1px solid rgba(45,212,160,.3);border-radius:8px;padding:12px;margin-bottom:12px;display:none">
+          ✅ Compte créé ! Un administrateur doit approuver votre accès. Vous recevrez un email dès que c'est fait.
+        </div>
+        <button class="btn btn-primary" onclick="doSignup()" style="width:100%;justify-content:center">Créer mon compte →</button>
+      </div>
+
+      <!-- RESET PASSWORD -->
+      <div id="tab-reset" style="display:none">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:32px;margin-bottom:8px">🔑</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">Mot de passe oublié ?</div>
+          <div style="font-size:12px;color:var(--muted)">Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label>Email</label>
+          <input type="email" id="reset-email" placeholder="vous@efi.com" onkeydown="if(event.key==='Enter')doResetPassword()">
+        </div>
+        <div id="reset-success" style="font-size:12px;color:var(--success);background:rgba(45,212,160,.08);border:1px solid rgba(45,212,160,.3);border-radius:8px;padding:12px;margin-bottom:12px;display:none">
+          📧 Email envoyé ! Vérifiez votre boîte mail et cliquez sur le lien pour réinitialiser votre mot de passe.
+        </div>
+        <div id="reset-error" style="font-size:11px;color:var(--danger);margin-bottom:10px;display:none;background:rgba(232,37,26,.08);padding:8px 12px;border-radius:6px"></div>
+        <button class="btn btn-primary" onclick="doResetPassword()" style="width:100%;justify-content:center;margin-bottom:12px">Envoyer le lien →</button>
+        <div style="text-align:center">
+          <span onclick="switchAuthTab('login')" style="font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">← Retour à la connexion</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EN ATTENTE -->
+<div id="pending-screen" style="position:fixed;inset:0;z-index:490;background:var(--bg);display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:40px;width:400px;max-width:95vw;text-align:center">
+    <div style="font-size:48px;margin-bottom:16px">⏳</div>
+    <div style="font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:2px;color:var(--accent);margin-bottom:10px">Compte en attente</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:20px">
+      Votre compte est en cours d'approbation.<br>Un administrateur ou délégué doit valider votre accès.
+    </p>
+    <div style="background:rgba(232,37,26,.08);border:1px solid rgba(232,37,26,.2);border-radius:8px;padding:12px;font-size:12px;color:var(--muted);margin-bottom:20px">
+      Contactez <strong style="color:var(--text)">taoufik.smires@efiautomotive.com</strong> pour accélérer l'approbation.
+    </div>
+    <button class="btn btn-ghost" onclick="logout()" style="width:100%;justify-content:center">Se déconnecter</button>
+  </div>
+</div>
+
+<!-- MODAL GESTION COMPTES (admin) -->
+<div class="modal-overlay" id="modal-comptes">
+  <div class="modal" style="width:720px">
+    <button class="modal-close" onclick="closeModal('modal-comptes')">✕</button>
+    <div class="modal-title">👤 Gestion des comptes pointeurs</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="filterComptes('tous')" id="fc-tous" style="border-color:var(--accent);color:var(--accent)">Tous</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterComptes('en_attente')" id="fc-attente">⏳ En attente</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterComptes('pointeur_approuve')" id="fc-approuve">✅ Approuvés</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Inscrit le</th><th>Actions</th></tr></thead>
+        <tbody id="comptes-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay"><div class="loading-box"><div class="spinner"></div><div id="loading-text">Chargement...</div></div></div>
+<div id="toast"></div>
+
+<!-- MODAL USER -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-user')">✕</button>
+    <div class="modal-title" id="modal-user-title">Ajouter un salarié</div>
+    <input type="hidden" id="u-id">
+    <div class="form-grid">
+      <div class="form-group"><label>Nom *</label><input type="text" id="u-nom" placeholder="Dupont"></div>
+      <div class="form-group"><label>Prénom *</label><input type="text" id="u-prenom" placeholder="Jean"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="u-email" placeholder="jean@efi.com"></div>
+      <div class="form-group"><label>Département / Service</label><input type="text" id="u-dept" placeholder="Production"></div>
+      <div class="form-group"><label>Matricule</label><input type="text" id="u-matricule" placeholder="MAT-001"></div>
+      <div class="form-group"><label>N° Carte / Badge</label><input type="text" id="u-carte" placeholder="04:28:60:FA:A5:12:90"></div>
+      <div class="form-group full"><label>Type de contrat</label>
+        <select id="u-contrat">
+          <option value="">-- Sélectionner --</option>
+          <option>CDI</option><option>CDD</option><option>Intérim</option>
+          <option>Stage</option><option>Alternance</option><option>Apprentissage</option>
+          <option>Retraite</option><option>Freelance</option><option>Fonctionnaire</option>
+          <option>Bénévole</option><option>Prestataire</option><option>Autre</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-actions">
+      <button class="btn btn-primary" onclick="saveUser()">Enregistrer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-user')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EVENT -->
+<div class="modal-overlay" id="modal-event">
+  <div class="modal" style="width:660px">
+    <button class="modal-close" onclick="closeModal('modal-event')">✕</button>
+    <div class="modal-title" id="modal-event-title">Créer un événement</div>
+    <input type="hidden" id="e-id">
+    <input type="hidden" id="e-current-img">
+    <div class="form-grid">
+      <div class="form-group full"><label>Nom de l'événement *</label><input type="text" id="e-nom" placeholder="Réunion mensuelle EFI"></div>
+      <div class="form-group"><label>Date *</label><input type="date" id="e-date"></div>
+      <div class="form-group"><label>Lieu</label><input type="text" id="e-lieu" placeholder="Salle A, Site EFI"></div>
+      <div class="form-group"><label>Heure début</label><input type="time" id="e-debut"></div>
+      <div class="form-group"><label>Heure fin</label><input type="time" id="e-fin"></div>
+      <div class="form-group"><label>Responsable</label><input type="text" id="e-responsable" placeholder="Nom du responsable"></div>
+      <div class="form-group full"><label>Description</label><textarea id="e-desc" placeholder="Détails de l'événement..."></textarea></div>
+      <div class="form-group full">
+        <label>Photo de couverture</label>
+        <div class="photo-upload-zone" id="photo-drop-zone" onclick="document.getElementById('e-photo-file').click()">
+          <input type="file" id="e-photo-file" accept="image/*" style="display:none" onchange="onPhotoSelected(this)">
+          <div id="photo-placeholder">
+            <div class="photo-upload-icon">🖼️</div>
+            <div class="photo-upload-text">Cliquez ou glissez une image ici<br><span style="font-size:10px;color:var(--muted)">JPG, PNG — max 5 MB</span></div>
+          </div>
+          <img id="photo-preview" class="photo-preview" alt="Aperçu">
+          <div id="photo-change-btn" style="display:none;margin-top:8px">
+            <button class="btn btn-ghost btn-sm" type="button" onclick="event.stopPropagation();document.getElementById('e-photo-file').click()">🔄 Changer la photo</button>
+            <button class="btn btn-danger btn-sm" type="button" onclick="event.stopPropagation();removePhoto()">✕ Supprimer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-actions">
+      <button class="btn btn-primary" onclick="saveEvent()">Enregistrer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-event')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INVITATIONS -->
+<div class="modal-overlay" id="modal-invite">
+  <div class="modal" style="width:680px">
+    <button class="modal-close" onclick="closeModal('modal-invite')">✕</button>
+    <div class="modal-title">Gérer les invités</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px" id="invite-event-name"></div>
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:14px">
+      <div id="itab-select" onclick="switchInvTab('select')" style="padding:8px 16px;font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--accent);text-transform:uppercase;letter-spacing:.5px">👥 Sélectionner</div>
+      <div id="itab-import" onclick="switchInvTab('import')" style="padding:8px 16px;font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">📥 Importer CSV</div>
+    </div>
+    <div id="inv-select-tab">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+        <input class="search-input" type="text" id="invite-search" placeholder="🔍 Chercher..." oninput="renderInviteList()" style="flex:1;min-width:140px">
+        <button class="btn btn-ghost btn-sm" onclick="toggleAllInvite(true)">Tout cocher</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleAllInvite(false)">Tout décocher</button>
+      </div>
+      <div class="dept-filter" id="dept-filter"></div>
+      <div class="invite-list" id="invite-list"></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px" id="invite-count"></div>
+    </div>
+    <div id="inv-import-tab" style="display:none">
+      <div class="import-info">
+        Format CSV : <strong>Nom, Prénom, Matricule, Email, Département, N°Carte, Contrat</strong><br>
+        Si le salarié existe (Nom+Prénom+Matricule) → invité seulement. Sinon → <strong>créé + invité</strong>.
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Coller la liste CSV</label>
+        <textarea id="inv-import-text" style="min-height:110px" placeholder="Dupont, Jean, MAT-001, jean@efi.com, Production, 04:28:60:FA, CDI&#10;Martin, Sophie, MAT-002, , RH, , CDD"></textarea>
+      </div>
+      <div id="inv-import-preview" style="margin-bottom:12px"></div>
+      <div class="btn-actions">
+        <button class="btn btn-ghost" onclick="previewInvImport()">👁 Prévisualiser</button>
+        <button class="btn btn-primary" id="btn-do-inv-import" onclick="doInvImport()" style="display:none">⚡ Importer et inviter</button>
+      </div>
+    </div>
+    <div class="btn-actions" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px" id="invite-save-bar">
+      <button class="btn btn-primary" onclick="saveInvitations()">✓ Enregistrer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-invite')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="app-layout">
+  <aside>
+    <div class="aside-logo">
+      <img class="logo-img" src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" alt="EFI" onerror="this.style.display='none'">
+      <div class="logo-text">
+        <div class="logo-name">EFI Events</div>
+        <div class="logo-sub">Gestion Présences</div>
+      </div>
+    </div>
+    <div class="aside-section">Navigation</div>
+    <div class="aside-item active" onclick="goPage('dashboard',this)"><span class="icon">🏠</span> Dashboard</div>
+    <div class="aside-item" onclick="goPage('evenements',this)"><span class="icon">📅</span> Événements</div>
+    <div class="aside-item" onclick="goPage('pointage',this)"><span class="icon">🎯</span> Pointage</div>
+    <div class="aside-item" onclick="goPage('users',this)"><span class="icon">👥</span> Salariés</div>
+    <div class="aside-item" onclick="goPage('export',this)"><span class="icon">📤</span> Export</div>
+    <div class="aside-item" onclick="goPage('moncompte',this)"><span class="icon">⚙️</span> Mon compte</div>
+    <div class="aside-item" id="admin-menu-item" onclick="openComptesModal()" style="display:none"><span class="icon">🔑</span> Comptes</div>
+    <div style="padding:10px 14px;border-top:1px solid var(--border)">
+      <div id="pointeur-badge" style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;font-family:'DM Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()" style="width:100%;justify-content:center;font-size:11px;padding:6px">🚪 Changer d'utilisateur</button>
+    </div>
+    <div class="aside-sync"><span class="sync-dot"></span><span id="sync-time">En direct</span></div>
+  </aside>
+
+  <div class="main-content">
+    <div class="top-bar">
+      <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-bar">
+        <div class="stat-card"><div class="stat-label">Événements</div><div class="stat-value blue" id="d-events">—</div></div>
+        <div class="stat-card"><div class="stat-label">Salariés</div><div class="stat-value" id="d-users">—</div></div>
+        <div class="stat-card"><div class="stat-label">Présences totales</div><div class="stat-value green" id="d-pres">—</div></div>
+        <div class="stat-card"><div class="stat-label">Taux moyen</div><div class="stat-value" id="d-taux">—</div></div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-header"><div class="card-title">📅 Événements récents</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Événement</th><th>Date</th><th>Lieu</th><th>Invités</th><th>Présents</th><th></th></tr></thead>
+            <tbody id="dash-events-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVENEMENTS -->
+    <div class="page" id="page-evenements">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:18px">
+        <button class="btn btn-primary" id="btn-nouvel-event" onclick="openEventModal()" style="font-size:13px;padding:11px 22px;display:none">＋ Nouvel événement</button>
+      </div>
+      <div class="event-grid" id="event-grid"></div>
+    </div>
+
+    <!-- POINTAGE -->
+    <div class="page" id="page-pointage">
+      <div id="pointage-no-event">
+        <div class="no-event-sel">📅 Sélectionnez un événement depuis <strong>Événements</strong> pour démarrer le pointage.</div>
+      </div>
+      <div id="pointage-content" style="display:none">
+        <div id="pointage-event-header" style="display:flex;align-items:center;gap:16px;margin-bottom:18px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:12px">
+          <img id="pointage-event-img" src="" style="width:60px;height:60px;object-fit:cover;border-radius:8px;display:none" alt="">
+          <div id="pointage-event-img-placeholder" style="width:60px;height:60px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.5">📅</div>
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px" id="pointage-event-title">—</div>
+            <div style="font-size:11px;color:var(--muted)" id="pointage-event-info">—</div>
+          </div>
+        </div>
+        <div class="stats-bar">
+          <div class="stat-card"><div class="stat-label">Invités</div><div class="stat-value" id="p-total">—</div></div>
+          <div class="stat-card"><div class="stat-label">Présents</div><div class="stat-value green" id="p-present">—</div></div>
+          <div class="stat-card"><div class="stat-label">Absents</div><div class="stat-value orange" id="p-absent">—</div></div>
+          <div class="stat-card"><div class="stat-label">Taux</div><div class="stat-value" id="p-taux">—</div></div>
+        </div>
+        <div class="scan-zone" id="scan-zone">
+          <span style="font-size:24px">📡</span>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:13px;margin-bottom:3px">Scanner un badge EFI</div>
+            <div class="scan-result" id="scan-result"></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="scan-input" type="text" placeholder="N° carte..." style="width:180px;margin:0" autocomplete="off" onkeydown="if(event.key==='Enter')doScan()">
+            <button class="btn btn-primary btn-sm" onclick="doScan()">Valider</button>
+          </div>
+        </div>
+        <input class="search-big" type="text" id="pointage-search" placeholder="🔍  Rechercher parmi les invités..." oninput="renderPointage()">
+        <div class="pointage-grid" id="pointage-grid"></div>
+      </div>
+    </div>
+
+    <!-- SALARIES -->
+    <div class="page" id="page-users">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👥 Salariés EFI</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="search-input" type="text" id="users-search" placeholder="🔍 Rechercher..." oninput="renderUsers()" style="width:160px">
+            <button class="btn btn-ghost btn-sm" onclick="showImportUsers()">📥 Import CSV</button>
+            <button class="btn btn-primary btn-sm" onclick="openUserModal()">＋ Ajouter</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nom</th><th>Prénom</th><th>Département</th><th>Contrat</th><th>Matricule</th><th>N° Carte</th><th>Email</th><th></th></tr></thead>
+            <tbody id="users-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card card-accent" id="import-users-card" style="display:none">
+        <div class="card-header">
+          <div class="card-title">📥 Importer des salariés</div>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-users-card').style.display='none'">✕</button>
+        </div>
+        <div class="card-body">
+          <div class="import-info">Format : <strong>Nom, Prénom, Matricule, Email, Département, N°Carte, Contrat</strong></div>
+          <div class="form-group" style="margin-bottom:12px"><label>Coller ici</label>
+            <textarea id="import-users-text" style="min-height:90px" placeholder="Dupont, Jean, MAT-001, jean@efi.com, Production, 04:28:60, CDI"></textarea>
+          </div>
+          <div id="import-users-preview" style="margin-bottom:12px"></div>
+          <div class="btn-actions">
+            <button class="btn btn-ghost" onclick="previewImportUsers()">👁 Prévisualiser</button>
+            <button class="btn btn-primary" id="btn-do-import-users" onclick="doImportUsers()" style="display:none">⚡ Importer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MON COMPTE -->
+    <div class="page" id="page-moncompte">
+      <div style="max-width:480px">
+        <div class="card card-accent">
+          <div class="card-header"><div class="card-title">⚙️ Mon compte</div></div>
+          <div class="card-body">
+            <div id="moncompte-info" style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:13px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="color:var(--muted)">Nom</span>
+                <strong id="mc-nom">—</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="color:var(--muted)">Email</span>
+                <span id="mc-email" style="font-family:'DM Mono',monospace;font-size:12px">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between">
+                <span style="color:var(--muted)">Rôle</span>
+                <span id="mc-role">—</span>
+              </div>
+            </div>
+
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;color:var(--accent);margin-bottom:14px">Changer le mot de passe</div>
+
+            <div id="mc-admin-note" style="display:none;background:rgba(232,37,26,.06);border:1px solid rgba(232,37,26,.15);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:14px">
+              ⚠️ Vous êtes connecté en tant qu'admin principal. Le mot de passe se change directement dans le fichier HTML (variable <code style="color:var(--accent)">ADMIN_PWD</code>).
+            </div>
+
+            <div id="mc-pwd-form">
+              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+                <div class="form-group">
+                  <label>Mot de passe actuel</label>
+                  <div style="position:relative">
+                    <input type="password" id="mc-pwd-old" placeholder="••••••••" style="padding-right:40px">
+                    <span onclick="togglePwd('mc-pwd-old',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted)">👁</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Nouveau mot de passe</label>
+                  <div style="position:relative">
+                    <input type="password" id="mc-pwd-new" placeholder="Min. 6 caractères" style="padding-right:40px">
+                    <span onclick="togglePwd('mc-pwd-new',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted)">👁</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Confirmer le nouveau mot de passe</label>
+                  <div style="position:relative">
+                    <input type="password" id="mc-pwd-confirm" placeholder="Répéter" style="padding-right:40px" onkeydown="if(event.key==='Enter')changePassword()">
+                    <span onclick="togglePwd('mc-pwd-confirm',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted)">👁</span>
+                  </div>
+                </div>
+              </div>
+              <div id="mc-error" style="font-size:11px;color:var(--danger);margin-bottom:10px;display:none;background:rgba(232,37,26,.08);padding:8px 12px;border-radius:6px"></div>
+              <div id="mc-success" style="font-size:12px;color:var(--success);background:rgba(45,212,160,.08);border:1px solid rgba(45,212,160,.3);border-radius:8px;padding:10px 12px;margin-bottom:12px;display:none">✅ Mot de passe changé avec succès !</div>
+              <button class="btn btn-primary" onclick="changePassword()">Enregistrer le nouveau mot de passe</button>
+            </div>
+
+            <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border)">
+              <button class="btn btn-danger" onclick="logout()" style="width:100%;justify-content:center">🚪 Se déconnecter</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPORT -->
+    <div class="page" id="page-export">
+      <div class="card card-accent">
+        <div class="card-header"><div class="card-title">📤 Export des données</div></div>
+        <div class="card-body">
+          <div class="form-grid" style="margin-bottom:20px">
+            <div class="form-group"><label>Événement</label><select id="export-event-sel"><option value="">Tous</option></select></div>
+            <div class="form-group"><label>Filtrer</label><select id="export-filter"><option value="">Tous</option><option value="true">Présents</option><option value="false">Absents</option></select></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+            <div class="card" style="margin:0;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''" onclick="exportCSV()">
+              <div style="font-size:30px;margin-bottom:8px">📊</div>
+              <div style="font-weight:600;margin-bottom:4px;font-size:13px">CSV / Excel</div>
+              <div style="font-size:11px;color:var(--muted)">Compatible Excel</div>
+            </div>
+            <div class="card" style="margin:0;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''" onclick="exportJSON()">
+              <div style="font-size:30px;margin-bottom:8px">📋</div>
+              <div style="font-weight:600;margin-bottom:4px;font-size:13px">JSON</div>
+              <div style="font-size:11px;color:var(--muted)">Format brut</div>
+            </div>
+            <div class="card" style="margin:0;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''" onclick="exportPrint()">
+              <div style="font-size:30px;margin-bottom:8px">🖨️</div>
+              <div style="font-weight:600;margin-bottom:4px;font-size:13px">Imprimer / PDF</div>
+              <div style="font-size:11px;color:var(--muted)">Feuille imprimable</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const URL_ = 'https://aygrpgccjzwdhwtqbotw.supabase.co';
+const KEY_ = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3JwZ2Njanp3ZGh3dHFib3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTE0MDEsImV4cCI6MjA5NjE4NzQwMX0.KP9oXyPhvznoy-EzIQUIoYjCHfMUMtUwA59YnVmXm78';
+const STORAGE_URL = `${URL_}/storage/v1/object/public/events-images/`;
+const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png';
+
+let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[];
+let currentPointeur = null; // objet pointeur complet
+let currentFilter = 'tous';
+const ADMIN_EMAIL = 'taoufik.smires@efiautomotive.com';
+const ADMIN_PWD = 'admin123';
+let currentEventId=null;
+let scanBuffer='', scanTimer2=null;
+let importUsersParsed=[], invImportParsed=[];
+let currentInviteFilter='';
+let currentInviteEventId=null;
+let inviteChecked=new Set();
+let pendingPhotoFile=null;
+let photoRemoved=false;
+
+const api = t => `${URL_}/rest/v1/${t}`;
+const H = () => ({apikey:KEY_,Authorization:`Bearer ${KEY_}`,'Content-Type':'application/json',Prefer:'return=representation'});
+const norm = s => (s||'').toLowerCase().trim();
+
+window.onload = () => {
+  const saved = sessionStorage.getItem('efi_pointeur');
+  if(saved) {
+    currentPointeur = JSON.parse(saved);
+    if(currentPointeur.role === 'en_attente') {
+      showPending();
+    } else {
+      showApp();
+    }
+  }
+
+};
+
+function switchAuthTab(tab) {
+  ['login','signup','reset'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none';
+  });
+  // Tabs visuels (seulement login/signup)
+  const isLogin = tab==='login';
+  const isSignup = tab==='signup';
+  const loginBtn = document.getElementById('tab-login-btn');
+  const signupBtn = document.getElementById('tab-signup-btn');
+  if(loginBtn) { loginBtn.style.background = isLogin?'var(--accent)':'transparent'; loginBtn.style.color = isLogin?'#fff':'var(--muted)'; }
+  if(signupBtn) { signupBtn.style.background = isSignup?'var(--accent)':'transparent'; signupBtn.style.color = isSignup?'#fff':'var(--muted)'; }
+}
+
+function togglePwd(inputId, icon) {
+  const input = document.getElementById(inputId);
+  if(input.type === 'password') { input.type='text'; icon.textContent='🙈'; }
+  else { input.type='password'; icon.textContent='👁'; }
+}
+
+async function doEmailLogin() {
+  const email = document.getElementById('li-email').value.trim();
+  const pwd = document.getElementById('li-pwd').value;
+  document.getElementById('login-error').style.display = 'none';
+  if(!email||!pwd) { showLoginErr('Email et mot de passe requis.'); return; }
+
+  // Compte admin local — vérification directe sans hash
+  if(email.toLowerCase()===ADMIN_EMAIL.toLowerCase() && pwd===ADMIN_PWD) {
+    currentPointeur = {id:'admin',nom:'Admin',prenom:'EFI',email:ADMIN_EMAIL,role:'admin',display:'Admin EFI'};
+    sessionStorage.setItem('efi_pointeur', JSON.stringify(currentPointeur));
+    showApp(); return;
+  }
+
+  try {
+    // 1. Récupérer le compte par email uniquement
+    const res = await fetch(api('pointeurs')+`?email=eq.${encodeURIComponent(email)}`, {headers:H()});
+    if(!res.ok) { showLoginErr('Erreur serveur. Réessayez.'); return; }
+    const data = await res.json();
+    if(!Array.isArray(data)||!data.length) { showLoginErr('Aucun compte trouvé avec cet email.'); return; }
+    const p = data[0];
+
+    // 2. Vérifier le mot de passe séparément
+    const pwdHash = btoa(pwd);
+    if(!p.pwd_hash) { showLoginErr('Compte sans mot de passe. Contactez taoufik.smires@efiautomotive.com'); return; }
+    if(p.pwd_hash !== pwdHash) { showLoginErr('Mot de passe incorrect.'); return; }
+
+    // 3. Connecter
+    currentPointeur = {...p, display: p.prenom+' '+p.nom};
+    sessionStorage.setItem('efi_pointeur', JSON.stringify(currentPointeur));
+    if(p.role==='en_attente') { showPending(); return; }
+    showApp();
+  } catch(e) { showLoginErr('Erreur : '+e.message); }
+}
+
+async function doSignup() {
+  const nom = document.getElementById('su-nom').value.trim();
+  const prenom = document.getElementById('su-prenom').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pwd = document.getElementById('su-pwd').value;
+  const pwd2 = document.getElementById('su-pwd2').value;
+  document.getElementById('signup-error').style.display='none';
+  document.getElementById('signup-success').style.display='none';
+  if(!nom||!prenom||!email||!pwd) { showSignupErr('Tous les champs sont obligatoires.'); return; }
+  if(pwd!==pwd2) { showSignupErr('Les mots de passe ne correspondent pas.'); return; }
+  if(pwd.length<6) { showSignupErr('Mot de passe trop court (min. 6 caractères).'); return; }
+  if(!/\S+@\S+\.\S+/.test(email)) { showSignupErr('Email invalide.'); return; }
+
+  try {
+    const check = await fetch(api('pointeurs')+`?email=eq.${encodeURIComponent(email)}`,{headers:H()});
+    const existing = await check.json();
+    if(Array.isArray(existing)&&existing.length) { showSignupErr('Cet email est déjà utilisé.'); return; }
+    const pwdHash = btoa(pwd);
+    const res = await fetch(api('pointeurs'),{method:'POST',headers:H(),body:JSON.stringify({nom,prenom,email,pwd_hash:pwdHash,role:'en_attente'})});
+    if(!res.ok) throw new Error();
+    document.getElementById('signup-success').style.display='block';
+    // Reset form après 4s
+    setTimeout(()=>{ switchAuthTab('login'); ['su-nom','su-prenom','su-email','su-pwd','su-pwd2'].forEach(i=>document.getElementById(i).value=''); },4000);
+  } catch(e) { showSignupErr('Erreur lors de la création du compte. Réessayez.'); }
+}
+
+async function doResetPassword() {
+  const email = document.getElementById('reset-email').value.trim();
+  document.getElementById('reset-success').style.display='none';
+  document.getElementById('reset-error').style.display='none';
+  if(!email) { document.getElementById('reset-error').textContent='Entrez votre email.'; document.getElementById('reset-error').style.display='block'; return; }
+
+  try {
+    // Vérifier que l'email existe dans notre table
+    const check = await fetch(api('pointeurs')+`?email=eq.${encodeURIComponent(email)}`,{headers:H()});
+    const data = await check.json();
+    if(!Array.isArray(data)||!data.length) {
+      // On affiche quand même succès pour ne pas révéler si l'email existe
+      document.getElementById('reset-success').style.display='block';
+      return;
+    }
+    // Envoyer reset via Supabase Auth
+    const res = await fetch(`${URL_}/auth/v1/recover`, {
+      method:'POST',
+      headers:{apikey:KEY_,'Content-Type':'application/json'},
+      body:JSON.stringify({email})
+    });
+    document.getElementById('reset-success').style.display='block';
+    document.getElementById('reset-email').value='';
+  } catch(e) {
+    document.getElementById('reset-success').style.display='block'; // Toujours afficher succès
+  }
+}
+
+function showApp() {
+  const authEl = document.getElementById('auth-screen');
+  const pendEl = document.getElementById('pending-screen');
+  if(authEl) authEl.style.display = 'none';
+  if(pendEl) pendEl.style.display = 'none';
+  updatePointeurBadge();
+  // Afficher/masquer menu admin
+  const adminItem = document.getElementById('admin-menu-item');
+  if(adminItem) adminItem.style.display = currentPointeur?.role==='admin' ? 'flex' : 'none';
+  loadAll().then(() => {
+    setInterval(silentRefresh, 6000);
+    document.addEventListener('keydown', onGlobalKey);
+  });
+}
+
+function showPending() {
+  const authEl = document.getElementById('auth-screen');
+  const pendEl = document.getElementById('pending-screen');
+  if(authEl) authEl.style.display = 'none';
+  if(pendEl) { pendEl.style.display = 'flex'; }
+}
+
+async function nommerAdmin(id, prenom, nom) {
+  if(!confirm(`Nommer ${prenom} ${nom} comme admin ? Il aura accès à toutes les fonctionnalités.`)) return;
+  try {
+    const headers = {apikey:KEY_,Authorization:`Bearer ${KEY_}`,'Content-Type':'application/json',Prefer:'return=representation'};
+    const res = await fetch(api('pointeurs')+`?id=eq.${id}`,{method:'PATCH',headers,body:JSON.stringify({role:'admin'})});
+    if(!res.ok){const e=await res.json();toast('Erreur : '+(e.message||res.status),'error');return;}
+    const idx=pointeurs.findIndex(p=>p.id===id);
+    if(idx>=0) pointeurs[idx].role='admin';
+    renderComptes(currentFilter);
+    toast(`✅ ${prenom} ${nom} est maintenant admin !`,'success');
+  } catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+async function revoquerAdmin(id, prenom, nom) {
+  if(!confirm(`Retirer les droits admin de ${prenom} ${nom} ?`)) return;
+  try {
+    const headers = {apikey:KEY_,Authorization:`Bearer ${KEY_}`,'Content-Type':'application/json',Prefer:'return=representation'};
+    const res = await fetch(api('pointeurs')+`?id=eq.${id}`,{method:'PATCH',headers,body:JSON.stringify({role:'pointeur_approuve'})});
+    if(!res.ok){const e=await res.json();toast('Erreur : '+(e.message||res.status),'error');return;}
+    const idx=pointeurs.findIndex(p=>p.id===id);
+    if(idx>=0) pointeurs[idx].role='pointeur_approuve';
+    renderComptes(currentFilter);
+    toast(`↩ Droits admin retirés à ${prenom} ${nom}.`,'info');
+  } catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+function showLoginErr(msg){const el=document.getElementById('login-error');el.textContent=msg;el.style.display='block';}
+function showSignupErr(msg){const el=document.getElementById('signup-error');el.textContent=msg;el.style.display='block';}
+
+function isAdmin() {
+  return currentPointeur?.role === 'admin';
+}
+
+function updatePointeurBadge() {
+  const el = document.getElementById('pointeur-badge');
+  if(el && currentPointeur) {
+    const roleLabel = {admin:'🔑 Admin', pointeur_approuve:'✅ Pointeur', en_attente:'⏳ En attente'}[currentPointeur.role]||'';
+    el.innerHTML = `<div style="font-size:11px;color:var(--text);font-weight:600">${esc(currentPointeur.display)}</div><div style="font-size:10px;color:var(--muted)">${roleLabel}</div>`;
+  }
+  // Bouton nouvel événement — admin seulement
+  const btnEv = document.getElementById('btn-nouvel-event');
+  if(btnEv) btnEv.style.display = isAdmin() ? 'inline-flex' : 'none';
+}
+
+function logout() {
+  sessionStorage.removeItem('efi_pointeur');
+  currentPointeur = null;
+  location.reload();
+}
+
+// GESTION COMPTES (admin)
+async function openComptesModal() {
+  await loadPointeurs();
+  renderComptes('tous');
+  document.getElementById('modal-comptes').classList.add('show');
+}
+
+async function loadPointeurs() {
+  const res = await fetch(api('pointeurs')+'?order=created_at.desc',{headers:H()});
+  pointeurs = await res.json();
+}
+
+function filterComptes(f) {
+  currentFilter = f;
+  ['tous','attente','approuve'].forEach(x => {
+    const el = document.getElementById('fc-'+x);
+    if(el) { el.style.borderColor=''; el.style.color=''; }
+  });
+  const active = document.getElementById('fc-'+(f==='tous'?'tous':f==='en_attente'?'attente':'approuve'));
+  if(active) { active.style.borderColor='var(--accent)'; active.style.color='var(--accent)'; }
+  renderComptes(f);
+}
+
+function renderComptes(filter) {
+  const data = filter==='tous' ? pointeurs : pointeurs.filter(p=>p.role===filter);
+  const tbody = document.getElementById('comptes-body');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">👤</div><div>Aucun compte</div></div></td></tr>`;return;}
+  tbody.innerHTML = data.map(p=>{
+    const roleTag = {
+      admin: `<span class="badge" style="background:rgba(232,37,26,.15);color:var(--accent);border:1px solid rgba(232,37,26,.3)">🔑 Admin</span>`,
+      pointeur_approuve: `<span class="badge badge-present">✅ Approuvé</span>`,
+      en_attente: `<span class="badge" style="background:rgba(255,107,53,.1);color:#ff6b35;border:1px solid rgba(255,107,53,.25)">⏳ En attente</span>`
+    }[p.role]||'';
+    const actions = p.role==='en_attente' ? `
+      <button class="btn btn-success btn-sm" onclick="approuverCompte('${p.id}')">✓ Approuver</button>
+      <button class="btn btn-danger btn-sm" onclick="refuserCompte('${p.id}')">✕ Refuser</button>
+    ` : p.role==='pointeur_approuve' ? `
+      <button class="btn btn-ghost btn-sm" onclick="nommerAdmin('${p.id}','${esc(p.prenom)}','${esc(p.nom)}')">⬆ Nommer admin</button>
+      <button class="btn btn-danger btn-sm" onclick="revoquerCompte('${p.id}')">Révoquer</button>
+    ` : p.role==='admin' && p.email !== ADMIN_EMAIL ? `
+      <button class="btn btn-ghost btn-sm" onclick="revoquerAdmin('${p.id}','${esc(p.prenom)}','${esc(p.nom)}')">⬇ Retirer admin</button>
+    ` : '';
+    return `<tr>
+      <td><strong>${esc(p.nom)}</strong> ${esc(p.prenom)}</td>
+      <td class="mono">${esc(p.email)}</td>
+      <td>${roleTag}</td>
+      <td class="mono" style="font-size:11px">${fmtDate(p.created_at?.slice(0,10))}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function approuverCompte(id) {
+  try {
+    const headers = {
+      apikey: KEY_,
+      Authorization: `Bearer ${KEY_}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    };
+    const res = await fetch(api('pointeurs')+`?id=eq.${id}`, {
+      method:'PATCH',
+      headers,
+      body: JSON.stringify({role:'pointeur_approuve'})
+    });
+    const result = await res.json();
+    if(!res.ok) { toast('Erreur : '+(result.message||res.status), 'error'); return; }
+    // Mettre à jour localement
+    const idx = pointeurs.findIndex(p=>p.id===id);
+    if(idx>=0) pointeurs[idx].role='pointeur_approuve';
+    renderComptes(currentFilter);
+    toast('✅ Compte approuvé !','success');
+  } catch(e) { toast('Erreur : '+e.message,'error'); }
+}
+
+async function refuserCompte(id) {
+  if(!confirm('Supprimer ce compte ?')) return;
+  try {
+    const res = await fetch(api('pointeurs')+`?id=eq.${id}`, {method:'DELETE', headers:H()});
+    if(!res.ok) { toast('Erreur suppression','error'); return; }
+    pointeurs = pointeurs.filter(p=>p.id!==id);
+    renderComptes(currentFilter);
+    toast('🗑 Compte supprimé.','info');
+  } catch(e) { toast('Erreur : '+e.message,'error'); }
+}
+
+async function revoquerCompte(id) {
+  if(!confirm('Révoquer l\'accès de ce pointeur ?')) return;
+  try {
+    const headers = {
+      apikey: KEY_,
+      Authorization: `Bearer ${KEY_}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    };
+    const res = await fetch(api('pointeurs')+`?id=eq.${id}`, {
+      method:'PATCH',
+      headers,
+      body: JSON.stringify({role:'en_attente'})
+    });
+    if(!res.ok) { const e=await res.json(); toast('Erreur : '+(e.message||res.status),'error'); return; }
+    const idx = pointeurs.findIndex(p=>p.id===id);
+    if(idx>=0) pointeurs[idx].role='en_attente';
+    renderComptes(currentFilter);
+    toast('↩ Accès révoqué.','info');
+  } catch(e) { toast('Erreur : '+e.message,'error'); }
+}
+
+async function loadAll() {
+  showLoading('Chargement EFI Events...');
+  try {
+    const [u,e,p,inv,pt] = await Promise.all([
+      fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
+      fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('invitations')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('pointeurs')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+    ]);
+    users=Array.isArray(u)?u:[];events=Array.isArray(e)?e:[];
+    presences=Array.isArray(p)?p:[];invitations=Array.isArray(inv)?inv:[];
+    pointeurs=Array.isArray(pt)?pt:[];
+    // Notifier si comptes en attente (admin seulement)
+    if(currentPointeur?.role==='admin') {
+      const pending = pointeurs.filter(p=>p.role==='en_attente').length;
+      const badge = document.getElementById('admin-menu-item');
+      if(badge && pending>0) badge.innerHTML=`<span class="icon">🔑</span> Comptes <span style="background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:4px">${pending}</span>`;
+      else if(badge) badge.innerHTML='<span class="icon">🔑</span> Comptes';
+    }
+    refreshAll();
+  } catch(err){toast('Erreur : '+err.message,'error');}
+  finally{hideLoading();}
+}
+
+async function silentRefresh() {
+  try {
+    const [u,e,p,inv,pt] = await Promise.all([
+      fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
+      fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('invitations')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('pointeurs')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+    ]);
+    const h=d=>JSON.stringify(d.map(x=>x.id+(x.present||'')));
+    const changed=h(p)!==h(presences)||h(inv)!==h(invitations)||u.length!==users.length||e.length!==events.length||pt.length!==pointeurs.length;
+    users=Array.isArray(u)?u:[];events=Array.isArray(e)?e:[];
+    presences=Array.isArray(p)?p:[];invitations=Array.isArray(inv)?inv:[];
+    pointeurs=Array.isArray(pt)?pt:[];
+    if(changed) refreshAll();
+    const el=document.getElementById('sync-time');
+    if(el){const n=new Date();el.textContent=n.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+  } catch{}
+}
+
+function refreshAll(){renderDashboard();renderEvents();renderUsers();populateExportSel();if(currentEventId)renderPointage();}
+
+// NAV
+function goPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.aside-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte'};
+  document.getElementById('top-title').innerHTML=`<span>${titles[name]||name}</span>`;
+  if(name==='moncompte') renderMonCompte();
+}
+
+// DASHBOARD
+function renderDashboard(){
+  const totalPres=presences.filter(p=>p.present).length;
+  const totalInv=invitations.length;
+  document.getElementById('d-events').textContent=events.length;
+  document.getElementById('d-users').textContent=users.length;
+  document.getElementById('d-pres').textContent=totalPres;
+  document.getElementById('d-taux').textContent=totalInv?Math.round(totalPres/totalInv*100)+'%':'—';
+  const tbody=document.getElementById('dash-events-body');
+  if(!events.length){tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📅</div><div>Aucun événement</div></div></td></tr>`;return;}
+  tbody.innerHTML=events.slice(0,8).map(ev=>{
+    const evInv=invitations.filter(i=>i.evenement_id===ev.id).length;
+    const evPres=presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
+    return`<tr>
+      <td><strong>${esc(ev.nom)}</strong></td>
+      <td class="mono">${ev.date?fmtDate(ev.date):'—'}</td>
+      <td class="mono">${esc(ev.lieu||'—')}</td>
+      <td><span class="badge badge-invited">${evInv} invités</span></td>
+      <td><span class="badge badge-present">${evPres} présents</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="selectEvent('${ev.id}')">🎯 Pointer</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// EVENTS
+function renderEvents(){
+  const grid=document.getElementById('event-grid');
+  if(!events.length){grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📅</div><div>Aucun événement. Cliquez sur <strong>＋ Nouvel événement</strong>.</div></div>`;return;}
+  grid.innerHTML=events.map(ev=>{
+    const evInv=invitations.filter(i=>i.evenement_id===ev.id).length;
+    const evPres=presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
+    const imgHtml=ev.image_url
+      ?`<img class="event-cover" src="${ev.image_url}" alt="${esc(ev.nom)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      :'';
+    const placeholderHtml=`<div class="event-cover-placeholder" style="${ev.image_url?'display:none':''}"><div class="ev-icon">📅</div></div>`;
+    return`<div class="event-card">
+      <div class="event-badge">${evPres}/${evInv} présents</div>
+      ${imgHtml}${placeholderHtml}
+      <div class="event-body">
+        <div class="event-name">${esc(ev.nom)}</div>
+        <div class="event-meta">
+          ${ev.date?`<span>📅 ${fmtDate(ev.date)}${ev.heure_debut?' · '+ev.heure_debut.slice(0,5):''} ${ev.heure_fin?'→ '+ev.heure_fin.slice(0,5):''}</span>`:''}
+          ${ev.lieu?`<span>📍 ${esc(ev.lieu)}</span>`:''}
+          ${ev.responsable?`<span>👤 ${esc(ev.responsable)}</span>`:''}
+          ${ev.description?`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">📝 ${esc(ev.description)}</span>`:''}
+        </div>
+        <div class="event-actions">
+          <button class="btn btn-primary btn-sm" onclick="selectEvent('${ev.id}')">🎯 Pointer</button>
+          <button class="btn btn-ghost btn-sm" onclick="openInviteModal('${ev.id}')">👥 (${evInv})</button>
+          ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openEventModal('${ev.id}')">✏️ Modifier</button>`:''}
+          ${isAdmin()?`<button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">🗑</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// PHOTO UPLOAD
+function onPhotoSelected(input){
+  const file=input.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){toast('Fichier non valide.','error');return;}
+  photoRemoved=false;
+  // Compression canvas avant upload
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      // Redimensionner max 1200x800 en conservant le ratio
+      const MAX_W=1200, MAX_H=800;
+      let w=img.width, h=img.height;
+      if(w>MAX_W){h=Math.round(h*MAX_W/w);w=MAX_W;}
+      if(h>MAX_H){w=Math.round(w*MAX_H/h);h=MAX_H;}
+      const canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(0,0,w,h);
+      ctx.drawImage(img,0,0,w,h);
+      canvas.toBlob(blob=>{
+        pendingPhotoFile=new File([blob],'cover.jpg',{type:'image/jpeg'});
+        const prev=document.getElementById('photo-preview');
+        prev.src=canvas.toDataURL('image/jpeg',0.88);
+        prev.style.display='block';
+        document.getElementById('photo-placeholder').style.display='none';
+        document.getElementById('photo-change-btn').style.display='block';
+        const kb=Math.round(pendingPhotoFile.size/1024);
+        toast('✅ Image optimisée ('+kb+' KB)','success');
+      },'image/jpeg',0.88);
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto(){
+  pendingPhotoFile=null;
+  photoRemoved=true;
+  document.getElementById('photo-preview').style.display='none';
+  document.getElementById('photo-preview').src='';
+  document.getElementById('photo-placeholder').style.display='block';
+  document.getElementById('photo-change-btn').style.display='none';
+  document.getElementById('e-photo-file').value='';
+}
+
+async function uploadPhoto(file, eventId){
+  const ext=file.name.split('.').pop();
+  const path=`event_${eventId}_${Date.now()}.${ext}`;
+  const res=await fetch(`${URL_}/storage/v1/object/events-images/${path}`,{
+    method:'POST',
+    headers:{apikey:KEY_,Authorization:`Bearer ${KEY_}`,'Content-Type':file.type,'x-upsert':'true'},
+    body:file
+  });
+  if(!res.ok) throw new Error('Upload image échoué');
+  return STORAGE_URL+path;
+}
+
+// SELECT EVENT
+function selectEvent(id){
+  currentEventId=id;
+  const ev=events.find(e=>e.id===id);
+  document.getElementById('pointage-no-event').style.display='none';
+  document.getElementById('pointage-content').style.display='block';
+  // Header pointage
+  const imgEl=document.getElementById('pointage-event-img');
+  const placEl=document.getElementById('pointage-event-img-placeholder');
+  if(ev&&ev.image_url){imgEl.src=ev.image_url;imgEl.style.display='block';placEl.style.display='none';}
+  else{imgEl.style.display='none';placEl.style.display='flex';}
+  document.getElementById('pointage-event-title').textContent=ev?ev.nom:'—';
+  document.getElementById('pointage-event-info').textContent=ev?[ev.date?fmtDate(ev.date):'',ev.lieu||''].filter(Boolean).join(' · '):'';
+  updatePointageStats();renderPointage();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.aside-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('page-pointage').classList.add('active');
+  document.querySelectorAll('.aside-item')[2].classList.add('active');
+  document.getElementById('top-title').innerHTML=`🎯 <span>${ev?esc(ev.nom):'Pointage'}</span>`;
+}
+
+function getInvitedUsers(){
+  if(!currentEventId) return [];
+  return invitations.filter(i=>i.evenement_id===currentEventId).map(inv=>{
+    const u=users.find(u=>u.id===inv.user_id);
+    const p=presences.find(p=>p.evenement_id===currentEventId&&p.user_id===inv.user_id);
+    return u?{...u,present:p?p.present:false,horraire_arrivee:p?p.horraire_arrivee:null,presence_id:p?p.id:null,pointe_par:p?p.pointe_par:null}:null;
+  }).filter(Boolean);
+}
+
+function updatePointageStats(){
+  const data=getInvitedUsers();
+  const pres=data.filter(r=>r.present).length;
+  document.getElementById('p-total').textContent=data.length;
+  document.getElementById('p-present').textContent=pres;
+  document.getElementById('p-absent').textContent=data.length-pres;
+  document.getElementById('p-taux').textContent=data.length?Math.round(pres/data.length*100)+'%':'0%';
+}
+
+function renderPointage(){
+  if(!currentEventId) return;
+  const q=document.getElementById('pointage-search').value.toLowerCase().trim();
+  const data=getInvitedUsers();
+  if(!data.length){
+    document.getElementById('pointage-grid').innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👥</div><div>Aucun invité.<br><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openInviteModal('${currentEventId}')">Gérer les invités</button></div></div>`;
+    return;
+  }
+  const filtered=q?data.filter(r=>(r.nom+' '+r.prenom).toLowerCase().includes(q)):data;
+  document.getElementById('pointage-grid').innerHTML=filtered.map(r=>`
+    <div class="pointage-card ${r.present?'is-present':''}">
+      <div>
+        <div class="p-name">${esc(r.nom)} ${esc(r.prenom)}</div>
+        <div class="p-meta">${[r.departement,r.matricule].filter(Boolean).map(esc).join(' · ')||'—'}</div>
+        ${r.present&&r.horraire_arrivee?`<div class="p-arrive">✓ ${r.horraire_arrivee.slice(0,5)}</div>`:''}
+      </div>
+      <button class="btn-toggle ${r.present?'present':'absent'}" onclick="togglePresence('${r.id}',${r.present},'${r.presence_id||''}')">
+        ${r.present?'✓ Présent':'Marquer présent'}
+      </button>
+    </div>`).join('');
+}
+
+async function togglePresence(userId,current,presenceId){
+  if(!currentEventId) return;
+  const heure=!current?nowHeure():null;
+  const pointePar=currentPointeur?currentPointeur.display:null;
+  try {
+    if(presenceId&&presenceId!=='null'&&presenceId!==''){
+      const body={present:!current,horraire_arrivee:heure||null};
+      if(!current&&pointePar) body.pointe_par=pointePar;
+      if(current) body.pointe_par=null;
+      const res=await fetch(api('presences')+`?id=eq.${presenceId}`,{method:'PATCH',headers:H(),body:JSON.stringify(body)});
+      if(!res.ok) throw new Error((await res.json()).message);
+      const idx=presences.findIndex(p=>p.id===presenceId);
+      if(idx>=0){presences[idx].present=!current;presences[idx].horraire_arrivee=heure?heure+':00':null;presences[idx].pointe_par=!current?pointePar:null;}
+    } else {
+      const body={user_id:userId,evenement_id:currentEventId,present:true,horraire_arrivee:heure,pointe_par:pointePar};
+      const res=await fetch(api('presences'),{method:'POST',headers:H(),body:JSON.stringify(body)});
+      if(!res.ok) throw new Error((await res.json()).message);
+      const np=await res.json();presences.push(Array.isArray(np)?np[0]:np);
+    }
+    updatePointageStats();renderPointage();renderDashboard();renderEvents();
+    toast(!current?'✅ Présent à '+heure:'↩ Présence annulée',!current?'success':'info');
+  } catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+// SCAN
+function onGlobalKey(e){
+  const tag=document.activeElement.tagName;
+  if((tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')&&document.activeElement.id!=='scan-input') return;
+  if(e.key==='Enter'){if(scanBuffer.length>3){document.getElementById('scan-input').value=scanBuffer;doScan();}scanBuffer='';clearTimeout(scanTimer2);return;}
+  if(e.key.length===1){scanBuffer+=e.key;clearTimeout(scanTimer2);scanTimer2=setTimeout(()=>{if(scanBuffer.length>3){document.getElementById('scan-input').value=scanBuffer;doScan();}scanBuffer='';},200);}
+}
+
+async function doScan(){
+  let numCarte=document.getElementById('scan-input').value.trim();
+  const resultEl=document.getElementById('scan-result');
+  const zone=document.getElementById('scan-zone');
+  if(!numCarte) return;
+  document.getElementById('scan-input').value='';
+  if(!currentEventId){resultEl.className='scan-result warn';resultEl.textContent='⚠ Sélectionnez un événement d\'abord';return;}
+  const n=s=>(s||'').toUpperCase().replace(/\s/g,'').trim();
+  const user=users.find(u=>n(u.numero_carte)===n(numCarte));
+  if(!user){resultEl.className='scan-result err';resultEl.textContent='❌ Badge non reconnu : '+numCarte;zone.className='scan-zone flash-err';setTimeout(()=>{zone.className='scan-zone';},1500);return;}
+  const isInvited=invitations.some(i=>i.evenement_id===currentEventId&&i.user_id===user.id);
+  if(!isInvited){resultEl.className='scan-result warn';resultEl.textContent=`⚠ ${user.nom} ${user.prenom} — non invité à cet événement`;zone.className='scan-zone flash-err';setTimeout(()=>{zone.className='scan-zone';resultEl.textContent='';},3000);return;}
+  const existing=presences.find(p=>p.evenement_id===currentEventId&&p.user_id===user.id);
+  if(existing&&existing.present){resultEl.className='scan-result ok';resultEl.textContent=`✓ Déjà présent : ${user.nom} ${user.prenom}`;setTimeout(()=>{resultEl.textContent='';},2500);return;}
+  const heure=nowHeure();
+  try {
+    if(existing){
+      const res=await fetch(api('presences')+`?id=eq.${existing.id}`,{method:'PATCH',headers:H(),body:JSON.stringify({present:true,horraire_arrivee:heure,pointe_par:currentPointeur?currentPointeur.display:null})});
+      if(!res.ok) throw new Error();
+      const idx=presences.findIndex(p=>p.id===existing.id);
+      if(idx>=0){presences[idx].present=true;presences[idx].horraire_arrivee=heure+':00';}
+    } else {
+      const res=await fetch(api('presences'),{method:'POST',headers:H(),body:JSON.stringify({user_id:user.id,evenement_id:currentEventId,present:true,horraire_arrivee:heure,pointe_par:currentPointeur?currentPointeur.display:null})});
+      if(!res.ok) throw new Error();
+      const np=await res.json();presences.push(Array.isArray(np)?np[0]:np);
+    }
+    updatePointageStats();renderPointage();renderDashboard();renderEvents();
+    resultEl.className='scan-result ok';resultEl.textContent=`✅ ${user.nom} ${user.prenom} — présent à ${heure}`;
+    zone.className='scan-zone flash';setTimeout(()=>{zone.className='scan-zone';resultEl.textContent='';},3000);
+  } catch(e){resultEl.className='scan-result err';resultEl.textContent='Erreur : '+e.message;}
+}
+
+// INVITATIONS
+function openInviteModal(eventId){
+  currentInviteEventId=eventId;
+  const ev=events.find(e=>e.id===eventId);
+  document.getElementById('invite-event-name').textContent=ev?`📅 ${ev.nom} · ${ev.date?fmtDate(ev.date):''}` :'';
+  inviteChecked=new Set(invitations.filter(i=>i.evenement_id===eventId).map(i=>i.user_id));
+  currentInviteFilter='';
+  switchInvTab('select');renderDeptFilter();renderInviteList();
+  document.getElementById('modal-invite').classList.add('show');
+}
+
+function renderDeptFilter(){
+  const depts=[...new Set(users.map(u=>u.departement).filter(Boolean))].sort();
+  document.getElementById('dept-filter').innerHTML=['<div class="dept-chip active" onclick="filterDept(\'\',this)">Tous</div>',...depts.map(d=>`<div class="dept-chip" onclick="filterDept('${esc(d)}',this)">${esc(d)}</div>`)].join('');
+}
+
+function filterDept(dept,el){
+  currentInviteFilter=dept;
+  document.querySelectorAll('.dept-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');renderInviteList();
+}
+
+function renderInviteList(){
+  const q=document.getElementById('invite-search').value.toLowerCase();
+  let filtered=users;
+  if(currentInviteFilter) filtered=filtered.filter(u=>u.departement===currentInviteFilter);
+  if(q) filtered=filtered.filter(u=>(u.nom+' '+u.prenom+(u.matricule||'')).toLowerCase().includes(q));
+  document.getElementById('invite-count').textContent=`${inviteChecked.size} salarié(s) sélectionné(s) sur ${users.length}`;
+  if(!filtered.length){document.getElementById('invite-list').innerHTML=`<div style="padding:18px;text-align:center;color:var(--muted);font-size:12px">Aucun résultat</div>`;return;}
+  document.getElementById('invite-list').innerHTML=filtered.map(u=>`
+    <div class="invite-row">
+      <div><div class="name">${esc(u.nom)} ${esc(u.prenom)}</div>
+      <div class="meta">${[u.departement,u.matricule,u.contrat].filter(Boolean).map(esc).join(' · ')}</div></div>
+      <input type="checkbox" class="chk" data-uid="${u.id}" ${inviteChecked.has(u.id)?'checked':''} onchange="toggleInviteCheck('${u.id}',this.checked)">
+    </div>`).join('');
+}
+
+function toggleInviteCheck(uid,checked){
+  if(checked) inviteChecked.add(uid); else inviteChecked.delete(uid);
+  document.getElementById('invite-count').textContent=`${inviteChecked.size} salarié(s) sélectionné(s) sur ${users.length}`;
+}
+
+function toggleAllInvite(val){
+  const q=document.getElementById('invite-search').value.toLowerCase();
+  let filtered=users;
+  if(currentInviteFilter) filtered=filtered.filter(u=>u.departement===currentInviteFilter);
+  if(q) filtered=filtered.filter(u=>(u.nom+' '+u.prenom).toLowerCase().includes(q));
+  filtered.forEach(u=>{if(val) inviteChecked.add(u.id); else inviteChecked.delete(u.id);});
+  renderInviteList();
+}
+
+async function saveInvitations(){
+  if(!currentInviteEventId) return;
+  showLoading('Enregistrement...');
+  try {
+    const existing=new Set(invitations.filter(i=>i.evenement_id===currentInviteEventId).map(i=>i.user_id));
+    const toAdd=[...inviteChecked].filter(uid=>!existing.has(uid));
+    const toRemove=[...existing].filter(uid=>!inviteChecked.has(uid));
+    for(const uid of toAdd){
+      const res=await fetch(api('invitations'),{method:'POST',headers:H(),body:JSON.stringify({user_id:uid,evenement_id:currentInviteEventId})});
+      if(!res.ok) continue;
+      const ni=await res.json();invitations.push(Array.isArray(ni)?ni[0]:ni);
+    }
+    for(const uid of toRemove){
+      const inv=invitations.find(i=>i.evenement_id===currentInviteEventId&&i.user_id===uid);
+      if(!inv) continue;
+      await fetch(api('invitations')+`?id=eq.${inv.id}`,{method:'DELETE',headers:H()});
+      invitations=invitations.filter(i=>i.id!==inv.id);
+    }
+    closeModal('modal-invite');refreshAll();
+    toast(`✅ Invitations mises à jour !`,'success');
+  } catch(e){toast('Erreur : '+e.message,'error');}
+  finally{hideLoading();}
+}
+
+function switchInvTab(tab){
+  document.getElementById('inv-select-tab').style.display=tab==='select'?'block':'none';
+  document.getElementById('inv-import-tab').style.display=tab==='import'?'block':'none';
+  document.getElementById('invite-save-bar').style.display=tab==='select'?'flex':'none';
+  document.getElementById('itab-select').style.borderBottomColor=tab==='select'?'var(--accent)':'transparent';
+  document.getElementById('itab-select').style.color=tab==='select'?'var(--accent)':'var(--muted)';
+  document.getElementById('itab-import').style.borderBottomColor=tab==='import'?'var(--accent)':'transparent';
+  document.getElementById('itab-import').style.color=tab==='import'?'var(--accent)':'var(--muted)';
+}
+
+function previewInvImport(){
+  const text=document.getElementById('inv-import-text').value.trim();
+  if(!text){toast('Collez une liste.','error');return;}
+  invImportParsed=text.split('\n').map(l=>l.trim()).filter(l=>l).map(line=>{
+    const sep=line.includes(';')?';':',';
+    const p=line.split(sep).map(x=>x.trim());
+    return{nom:p[0]||'',prenom:p[1]||'',matricule:p[2]||null,email:p[3]||null,departement:p[4]||null,numero_carte:p[5]||null,contrat:p[6]||null};
+  }).filter(p=>p.nom&&p.prenom);
+  if(!invImportParsed.length){toast('Aucune ligne valide.','error');return;}
+  document.getElementById('inv-import-preview').innerHTML=`
+    <div style="background:rgba(45,212,160,.06);border:1px solid rgba(45,212,160,.2);border-radius:8px;padding:12px 16px">
+      <div style="font-size:12px;color:var(--success);font-weight:600;margin-bottom:8px">✓ ${invImportParsed.length} personne(s)</div>
+      <div style="max-height:120px;overflow-y:auto">
+        ${invImportParsed.map((p,i)=>{
+          const exists=users.find(u=>norm(u.nom)===norm(p.nom)&&norm(u.prenom)===norm(p.prenom)&&((!u.matricule&&!p.matricule)||(u.matricule&&p.matricule&&norm(u.matricule)===norm(p.matricule))));
+          return`<div style="font-size:11px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between">
+            <span><strong style="color:var(--text)">${esc(p.nom)} ${esc(p.prenom)}</strong>${p.matricule?' · '+esc(p.matricule):''}</span>
+            <span style="color:${exists?'var(--success)':'var(--accent2)'}">${exists?'✓ existant':'＋ nouveau'}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  document.getElementById('btn-do-inv-import').style.display='inline-flex';
+}
+
+async function doInvImport(){
+  if(!currentInviteEventId||!invImportParsed.length) return;
+  showLoading(`Import de ${invImportParsed.length} invités...`);
+  let created=0,invited=0,skipped=0;
+  for(const p of invImportParsed){
+    try {
+      let user=users.find(u=>norm(u.nom)===norm(p.nom)&&norm(u.prenom)===norm(p.prenom)&&((!u.matricule&&!p.matricule)||(u.matricule&&p.matricule&&norm(u.matricule)===norm(p.matricule))));
+      if(!user){
+        const res=await fetch(api('users'),{method:'POST',headers:H(),body:JSON.stringify(p)});
+        if(!res.ok) throw new Error();
+        const nu=await res.json();user=Array.isArray(nu)?nu[0]:nu;users.push(user);created++;
+      }
+      const alreadyInv=invitations.some(i=>i.evenement_id===currentInviteEventId&&i.user_id===user.id);
+      if(!alreadyInv){
+        const res=await fetch(api('invitations'),{method:'POST',headers:H(),body:JSON.stringify({user_id:user.id,evenement_id:currentInviteEventId})});
+        if(!res.ok) throw new Error();
+        const ni=await res.json();invitations.push(Array.isArray(ni)?ni[0]:ni);invited++;
+      } else {skipped++;}
+    } catch{skipped++;}
+  }
+  hideLoading();
+  toast(`✅ ${created} créé(s) · ${invited} invité(s)${skipped?' · '+skipped+' déjà présents':''}`, 'success');
+  document.getElementById('inv-import-text').value='';
+  document.getElementById('inv-import-preview').innerHTML='';
+  document.getElementById('btn-do-inv-import').style.display='none';
+  invImportParsed=[];closeModal('modal-invite');refreshAll();
+}
+
+// USERS CRUD
+function renderUsers(){
+  const q=document.getElementById('users-search').value.toLowerCase();
+  const data=q?users.filter(u=>(u.nom+u.prenom+(u.email||'')+(u.matricule||'')).toLowerCase().includes(q)):users;
+  const tbody=document.getElementById('users-body');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👥</div><div>Aucun salarié.</div></div></td></tr>`;return;}
+  tbody.innerHTML=data.map(u=>`<tr>
+    <td><strong>${esc(u.nom)}</strong></td><td>${esc(u.prenom)}</td>
+    <td class="mono">${esc(u.departement||'—')}</td>
+    <td>${u.contrat?`<span class="badge badge-contrat">${esc(u.contrat)}</span>`:'—'}</td>
+    <td class="mono">${esc(u.matricule||'—')}</td>
+    <td class="mono">${esc(u.numero_carte||'—')}</td>
+    <td class="mono">${esc(u.email||'—')}</td>
+    <td>
+      <button class="icon-btn edit" onclick="openUserModal('${u.id}')">✏</button>
+      <button class="icon-btn del" onclick="deleteUser('${u.id}')">✕</button>
+    </td>
+  </tr>`).join('');
+}
+
+function openUserModal(id){
+  clearUserForm();
+  if(id){
+    const u=users.find(x=>x.id===id);if(!u)return;
+    document.getElementById('u-id').value=u.id;
+    document.getElementById('u-nom').value=u.nom||'';
+    document.getElementById('u-prenom').value=u.prenom||'';
+    document.getElementById('u-email').value=u.email||'';
+    document.getElementById('u-dept').value=u.departement||'';
+    document.getElementById('u-matricule').value=u.matricule||'';
+    document.getElementById('u-carte').value=u.numero_carte||'';
+    document.getElementById('u-contrat').value=u.contrat||'';
+    document.getElementById('modal-user-title').textContent='Modifier le salarié';
+  } else {document.getElementById('modal-user-title').textContent='Ajouter un salarié';}
+  document.getElementById('modal-user').classList.add('show');
+}
+
+async function saveUser(){
+  const nom=document.getElementById('u-nom').value.trim();
+  const prenom=document.getElementById('u-prenom').value.trim();
+  if(!nom||!prenom){toast('Nom et Prénom obligatoires.','error');return;}
+  const id=document.getElementById('u-id').value;
+  const payload={nom,prenom,email:document.getElementById('u-email').value.trim()||null,departement:document.getElementById('u-dept').value.trim()||null,matricule:document.getElementById('u-matricule').value.trim()||null,numero_carte:document.getElementById('u-carte').value.trim()||null,contrat:document.getElementById('u-contrat').value||null};
+  showLoading('Enregistrement...');
+  try {
+    if(id){
+      const res=await fetch(api('users')+`?id=eq.${id}`,{method:'POST',headers:{...H(),Prefer:'return=representation'},method:'PATCH',body:JSON.stringify(payload)});
+      if(!res.ok) throw new Error((await res.json()).message);
+      const idx=users.findIndex(u=>u.id===id);if(idx>=0) users[idx]={...users[idx],...payload};
+    } else {
+      const res=await fetch(api('users'),{method:'POST',headers:H(),body:JSON.stringify(payload)});
+      if(!res.ok) throw new Error((await res.json()).message);
+      const nu=await res.json();users.push(Array.isArray(nu)?nu[0]:nu);
+    }
+    closeModal('modal-user');renderUsers();renderDashboard();
+    toast('✅ Salarié enregistré !','success');
+  } catch(e){toast('Erreur : '+e.message,'error');}
+  finally{hideLoading();}
+}
+
+async function deleteUser(id){
+  if(!confirm('Supprimer ce salarié ? Ses invitations et présences seront supprimées.')) return;
+  try {
+    await Promise.all([fetch(api('presences')+`?user_id=eq.${id}`,{method:'DELETE',headers:H()}),fetch(api('invitations')+`?user_id=eq.${id}`,{method:'DELETE',headers:H()})]);
+    await fetch(api('users')+`?id=eq.${id}`,{method:'DELETE',headers:H()});
+    users=users.filter(u=>u.id!==id);presences=presences.filter(p=>p.user_id!==id);invitations=invitations.filter(i=>i.user_id!==id);
+    renderUsers();renderDashboard();renderEvents();if(currentEventId)renderPointage();
+    toast('🗑 Supprimé.','info');
+  } catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+function clearUserForm(){document.getElementById('u-id').value='';['u-nom','u-prenom','u-email','u-dept','u-matricule','u-carte'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});document.getElementById('u-contrat').value='';}
+function showImportUsers(){document.getElementById('import-users-card').style.display='block';document.getElementById('import-users-card').scrollIntoView({behavior:'smooth'});}
+
+function previewImportUsers(){
+  const text=document.getElementById('import-users-text').value.trim();
+  if(!text){toast('Collez une liste.','error');return;}
+  importUsersParsed=text.split('\n').map(l=>l.trim()).filter(l=>l).map(line=>{
+    const sep=line.includes(';')?';':',';const p=line.split(sep).map(x=>x.trim());
+    return{nom:p[0]||'',prenom:p[1]||'',matricule:p[2]||null,email:p[3]||null,departement:p[4]||null,numero_carte:p[5]||null,contrat:p[6]||null};
+  }).filter(p=>p.nom&&p.prenom);
+  if(!importUsersParsed.length){toast('Aucune ligne valide.','error');return;}
+  document.getElementById('import-users-preview').innerHTML=`<div style="background:rgba(45,212,160,.06);border:1px solid rgba(45,212,160,.2);border-radius:8px;padding:12px 16px"><div style="font-size:12px;color:var(--success);font-weight:600;margin-bottom:8px">✓ ${importUsersParsed.length} personne(s)</div></div>`;
+  document.getElementById('btn-do-import-users').style.display='inline-flex';
+}
+
+async function doImportUsers(){
+  showLoading(`Import ${importUsersParsed.length} salariés...`);
+  let ok=0,skip=0;
+  for(const p of importUsersParsed){
+    const exists=users.find(u=>norm(u.nom)===norm(p.nom)&&norm(u.prenom)===norm(p.prenom));
+    if(exists){skip++;continue;}
+    try{const res=await fetch(api('users'),{method:'POST',headers:H(),body:JSON.stringify(p)});if(!res.ok)throw 0;const nu=await res.json();users.push(Array.isArray(nu)?nu[0]:nu);ok++;}catch{skip++;}
+  }
+  hideLoading();
+  toast(`✅ ${ok} importé(s)${skip?' · '+skip+' ignoré(s)':''}`,ok?'success':'info');
+  if(ok>0){document.getElementById('import-users-text').value='';document.getElementById('import-users-preview').innerHTML='';document.getElementById('btn-do-import-users').style.display='none';importUsersParsed=[];document.getElementById('import-users-card').style.display='none';renderUsers();}
+}
+
+// EVENTS CRUD
+function openEventModal(id){
+  if(!isAdmin()){toast('Seul l\'admin peut créer ou modifier des événements.','error');return;}
+  clearEventForm();pendingPhotoFile=null;photoRemoved=false;
+  if(id){
+    const ev=events.find(e=>e.id===id);if(!ev)return;
+    document.getElementById('e-id').value=ev.id;
+    document.getElementById('e-nom').value=ev.nom||'';
+    document.getElementById('e-date').value=ev.date||'';
+    document.getElementById('e-lieu').value=ev.lieu||'';
+    document.getElementById('e-debut').value=ev.heure_debut?ev.heure_debut.slice(0,5):'';
+    document.getElementById('e-fin').value=ev.heure_fin?ev.heure_fin.slice(0,5):'';
+    document.getElementById('e-responsable').value=ev.responsable||'';
+    document.getElementById('e-desc').value=ev.description||'';
+    document.getElementById('e-current-img').value=ev.image_url||'';
+    if(ev.image_url){
+      const prev=document.getElementById('photo-preview');
+      prev.src=ev.image_url;prev.style.display='block';
+      document.getElementById('photo-placeholder').style.display='none';
+      document.getElementById('photo-change-btn').style.display='block';
+    }
+    document.getElementById('modal-event-title').textContent='Modifier l\'événement';
+  } else {document.getElementById('modal-event-title').textContent='Créer un événement';}
+  document.getElementById('modal-event').classList.add('show');
+}
+
+async function saveEvent(){
+  const nom=document.getElementById('e-nom').value.trim();
+  const date=document.getElementById('e-date').value;
+  if(!nom||!date){toast('Nom et Date obligatoires.','error');return;}
+  const id=document.getElementById('e-id').value;
+  showLoading('Enregistrement...');
+  try {
+    let image_url=document.getElementById('e-current-img').value||null;
+    if(photoRemoved) image_url=null;
+    if(pendingPhotoFile){
+      const tmpId=id||'new_'+Date.now();
+      image_url=await uploadPhoto(pendingPhotoFile,tmpId);
+    }
+    const payload={nom,date,lieu:document.getElementById('e-lieu').value.trim()||null,heure_debut:document.getElementById('e-debut').value||null,heure_fin:document.getElementById('e-fin').value||null,responsable:document.getElementById('e-responsable').value.trim()||null,description:document.getElementById('e-desc').value.trim()||null,image_url};
+    if(id){
+      const res=await fetch(api('evenements')+`?id=eq.${id}`,{method:'PATCH',headers:H(),body:JSON.stringify(payload)});
+      if(!res.ok) throw new Error((await res.json()).message);
+      const idx=events.findIndex(e=>e.id===id);if(idx>=0) events[idx]={...events[idx],...payload};
+    } else {
+      const res=await fetch(api('evenements'),{method:'POST',headers:H(),body:JSON.stringify(payload)});
+      if(!res.ok) throw new Error((await res.json()).message);
+      const ne=await res.json();events.unshift(Array.isArray(ne)?ne[0]:ne);
+    }
+    closeModal('modal-event');renderEvents();renderDashboard();populateExportSel();
+    toast('✅ Événement enregistré !','success');
+  } catch(e){toast('Erreur : '+e.message,'error');}
+  finally{hideLoading();}
+}
+
+async function deleteEvent(id){
+  if(!isAdmin()){toast('Seul l\'admin peut supprimer des événements.','error');return;}
+  if(!confirm('Supprimer cet événement, ses invitations et présences ?')) return;
+  try {
+    await Promise.all([fetch(api('presences')+`?evenement_id=eq.${id}`,{method:'DELETE',headers:H()}),fetch(api('invitations')+`?evenement_id=eq.${id}`,{method:'DELETE',headers:H()})]);
+    await fetch(api('evenements')+`?id=eq.${id}`,{method:'DELETE',headers:H()});
+    events=events.filter(e=>e.id!==id);presences=presences.filter(p=>p.evenement_id!==id);invitations=invitations.filter(i=>i.evenement_id!==id);
+    if(currentEventId===id){currentEventId=null;document.getElementById('pointage-no-event').style.display='block';document.getElementById('pointage-content').style.display='none';}
+    renderEvents();renderDashboard();populateExportSel();
+    toast('🗑 Événement supprimé.','info');
+  } catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+function clearEventForm(){
+  ['e-id','e-nom','e-date','e-lieu','e-debut','e-fin','e-responsable','e-desc','e-current-img'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  document.getElementById('photo-preview').style.display='none';
+  document.getElementById('photo-preview').src='';
+  document.getElementById('photo-placeholder').style.display='block';
+  document.getElementById('photo-change-btn').style.display='none';
+  document.getElementById('e-photo-file').value='';
+}
+
+// EXPORT
+function populateExportSel(){
+  const sel=document.getElementById('export-event-sel');const val=sel.value;
+  sel.innerHTML='<option value="">Tous les événements</option>'+events.map(e=>`<option value="${e.id}">${esc(e.nom)} (${e.date||''})</option>`).join('');
+  sel.value=val;
+}
+
+function getExportData(){
+  const evId=document.getElementById('export-event-sel').value;
+  const filterPres=document.getElementById('export-filter').value;
+  const rows=[];
+  (evId?events.filter(e=>e.id===evId):events).forEach(ev=>{
+    invitations.filter(i=>i.evenement_id===ev.id).forEach(inv=>{
+      const u=users.find(u=>u.id===inv.user_id);if(!u)return;
+      const p=presences.find(p=>p.evenement_id===ev.id&&p.user_id===u.id);
+      const present=p?p.present:false;
+      if(filterPres===''||(filterPres==='true'&&present)||(filterPres==='false'&&!present)){
+        rows.push({evenement:ev.nom,date:ev.date||'',lieu:ev.lieu||'',responsable:ev.responsable||'',nom:u.nom,prenom:u.prenom,email:u.email||'',departement:u.departement||'',contrat:u.contrat||'',matricule:u.matricule||'',numero_carte:u.numero_carte||'',present:present?'Oui':'Non',heure:p&&p.horraire_arrivee?p.horraire_arrivee.slice(0,5):'',pointe_par:p&&p.pointe_par?p.pointe_par:''});
+      }
+    });
+  });
+  return rows;
+}
+
+function exportCSV(){
+  const rows=getExportData();if(!rows.length){toast('Aucune donnée.','error');return;}
+  const h=['Événement','Date','Lieu','Responsable','Nom','Prénom','Email','Département','Contrat','Matricule','N° Carte','Présent','Heure','Pointé par'];
+  const csv=[h,...rows.map(r=>Object.values(r))].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  dl('data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv),`EFI-Events-${new Date().toISOString().slice(0,10)}.csv`);
+  toast('📥 CSV téléchargé.','success');
+}
+
+function exportJSON(){
+  const rows=getExportData();if(!rows.length){toast('Aucune donnée.','error');return;}
+  dl('data:application/json,'+encodeURIComponent(JSON.stringify(rows,null,2)),`EFI-Events-${new Date().toISOString().slice(0,10)}.json`);
+  toast('📋 JSON téléchargé.','success');
+}
+
+function exportPrint(){
+  const rows=getExportData();if(!rows.length){toast('Aucune donnée.','error');return;}
+  const evId=document.getElementById('export-event-sel').value;
+  const ev=evId?events.find(e=>e.id===evId):null;
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>EFI Events — Présences</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111;font-size:12px}header{display:flex;align-items:center;gap:12px;margin-bottom:6px}header img{height:40px}h1{font-size:16px;margin:0}p{font-size:11px;color:#666;margin-bottom:14px}table{width:100%;border-collapse:collapse}th{background:#f5f5f5;padding:7px;text-align:left;border:1px solid #ddd;font-size:10px;text-transform:uppercase}td{padding:6px 7px;border:1px solid #ddd}.ok{color:#16a34a;font-weight:700}.no{color:#dc2626}</style></head><body><header><img src="${EFI_LOGO}" onerror="this.style.display='none'"><h1>EFI Events — Feuille de Présence</h1></header><p>${ev?`${ev.nom} · ${ev.date||''} · ${ev.lieu||''}`:''} · Exporté le ${new Date().toLocaleDateString('fr-FR')}</p><table><thead><tr><th>#</th><th>Nom</th><th>Prénom</th><th>Département</th><th>Matricule</th><th>Présent</th><th>Heure</th><th>Signature</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.nom}</td><td>${r.prenom}</td><td>${r.departement}</td><td>${r.matricule}</td><td class="${r.present==='Oui'?'ok':'no'}">${r.present}</td><td>${r.heure}</td><td style="width:120px"></td></tr>`).join('')}</tbody></table></body></html>`);
+  win.document.close();win.print();toast('🖨️ Impression lancée.','success');
+}
+
+function dl(href,filename){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
+
+function renderMonCompte() {
+  if(!currentPointeur) return;
+  const roleLabel = {admin:'🔑 Admin', pointeur_approuve:'✅ Pointeur approuvé', en_attente:'⏳ En attente'}[currentPointeur.role]||currentPointeur.role;
+  document.getElementById('mc-nom').textContent = currentPointeur.display || '—';
+  document.getElementById('mc-email').textContent = currentPointeur.email || '—';
+  document.getElementById('mc-role').innerHTML = `<span class="badge ${currentPointeur.role==='admin'?'':'badge-present'}" style="${currentPointeur.role==='admin'?'background:rgba(232,37,26,.15);color:var(--accent);border:1px solid rgba(232,37,26,.3)':''}">${roleLabel}</span>`;
+  // Admin principal → masquer formulaire mdp
+  const isMainAdmin = currentPointeur.email === ADMIN_EMAIL;
+  document.getElementById('mc-admin-note').style.display = isMainAdmin ? 'block' : 'none';
+  document.getElementById('mc-pwd-form').style.display = isMainAdmin ? 'none' : 'block';
+  // Reset form
+  ['mc-pwd-old','mc-pwd-new','mc-pwd-confirm'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mc-error').style.display='none';
+  document.getElementById('mc-success').style.display='none';
+}
+
+async function changePassword() {
+  const oldPwd = document.getElementById('mc-pwd-old').value;
+  const newPwd = document.getElementById('mc-pwd-new').value;
+  const confirmPwd = document.getElementById('mc-pwd-confirm').value;
+  const errEl = document.getElementById('mc-error');
+  const okEl = document.getElementById('mc-success');
+  errEl.style.display='none'; okEl.style.display='none';
+
+  if(!oldPwd||!newPwd||!confirmPwd) { errEl.textContent='Tous les champs sont obligatoires.'; errEl.style.display='block'; return; }
+  if(newPwd.length<6) { errEl.textContent='Nouveau mot de passe trop court (min. 6 caractères).'; errEl.style.display='block'; return; }
+  if(newPwd!==confirmPwd) { errEl.textContent='Les nouveaux mots de passe ne correspondent pas.'; errEl.style.display='block'; return; }
+
+  // Vérifier ancien mot de passe
+  const oldHash = btoa(oldPwd);
+  if(currentPointeur.pwd_hash !== oldHash) { errEl.textContent='Mot de passe actuel incorrect.'; errEl.style.display='block'; return; }
+  if(oldPwd===newPwd) { errEl.textContent='Le nouveau mot de passe doit être différent de l\'ancien.'; errEl.style.display='block'; return; }
+
+  try {
+    const newHash = btoa(newPwd);
+    const res = await fetch(api('pointeurs')+`?id=eq.${currentPointeur.id}`,{
+      method:'PATCH',
+      headers:{apikey:KEY_,Authorization:`Bearer ${KEY_}`,'Content-Type':'application/json',Prefer:'return=representation'},
+      body:JSON.stringify({pwd_hash:newHash})
+    });
+    if(!res.ok){const e=await res.json();errEl.textContent='Erreur : '+(e.message||res.status);errEl.style.display='block';return;}
+    // Mettre à jour en session
+    currentPointeur.pwd_hash = newHash;
+    sessionStorage.setItem('efi_pointeur', JSON.stringify(currentPointeur));
+    okEl.style.display='block';
+    ['mc-pwd-old','mc-pwd-new','mc-pwd-confirm'].forEach(id=>document.getElementById(id).value='');
+    setTimeout(()=>okEl.style.display='none', 4000);
+  } catch(e){errEl.textContent='Erreur : '+e.message;errEl.style.display='block';}
+}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))e.target.classList.remove('show');});
+function nowHeure(){const n=new Date();return n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtDate(d){if(!d)return'—';const[y,m,j]=d.split('-');return`${j}/${m}/${y}`;}
+function showLoading(msg){document.getElementById('loading-text').textContent=msg;document.getElementById('loading-overlay').classList.add('show');}
+function hideLoading(){document.getElementById('loading-overlay').classList.remove('show');}
+function toast(msg,type='info'){const el=document.createElement('div');el.className=`toast-item ${type}`;el.innerHTML=msg;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),4000);}
+</script>
+</body>
+</html>
