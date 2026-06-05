@@ -163,6 +163,35 @@ td{padding:10px 12px;color:var(--text)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
 .empty-icon{font-size:36px;margin-bottom:8px;opacity:.4}
+/* ── POPUP SCAN ─────────────────────────────────────────── */
+.scan-popup{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);
+  z-index:999;
+  background:var(--surface);
+  border:2px solid var(--accent);
+  border-radius:16px;
+  padding:28px 32px;
+  text-align:center;
+  min-width:280px;
+  max-width:90vw;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  opacity:0;
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+.scan-popup.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+.scan-popup.success{border-color:var(--success)}
+.scan-popup.error{border-color:var(--danger)}
+.scan-popup.warning{border-color:var(--accent2)}
+.scan-popup-icon{font-size:48px;margin-bottom:12px;line-height:1}
+.scan-popup-badge{font-family:'DM Mono',monospace;font-size:13px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin-bottom:12px;word-break:break-all}
+.scan-popup-name{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:4px}
+.scan-popup-info{font-size:12px;color:var(--muted)}
+.scan-popup-bar{height:3px;background:var(--border);border-radius:2px;margin-top:16px;overflow:hidden}
+.scan-popup-bar-fill{height:100%;background:var(--accent);border-radius:2px;width:100%;transition:width linear}
+.scan-popup-overlay{position:fixed;inset:0;z-index:998;background:rgba(0,0,0,.4);opacity:0;transition:opacity .25s;pointer-events:none}
+.scan-popup-overlay.show{opacity:1}
+
 /* ── MOBILE ─────────────────────────────────────────────── */
 @media(max-width:768px){
   /* Layout */
@@ -1398,11 +1427,26 @@ async function doScan(){
   if(!currentEventId){resultEl.className='scan-result warn';resultEl.textContent='⚠ Sélectionnez un événement d\'abord';return;}
   const n=s=>(s||'').toUpperCase().replace(/\s/g,'').trim();
   const user=users.find(u=>n(u.numero_carte)===n(numCarte));
-  if(!user){resultEl.className='scan-result err';resultEl.textContent='❌ Badge non reconnu : '+numCarte;zone.className='scan-zone flash-err';setTimeout(()=>{zone.className='scan-zone';},1500);return;}
+  if(!user){
+    resultEl.className='scan-result err';resultEl.textContent='❌ Badge non reconnu : '+numCarte;
+    zone.className='scan-zone flash-err';setTimeout(()=>{zone.className='scan-zone';},1500);
+    showScanPopup(numCarte,'error','Badge inconnu','Ce badge n\'est pas dans la base');
+    return;
+  }
   const isInvited=invitations.some(i=>i.evenement_id===currentEventId&&i.user_id===user.id);
-  if(!isInvited){resultEl.className='scan-result warn';resultEl.textContent=`⚠ ${user.nom} ${user.prenom} — non invité à cet événement`;zone.className='scan-zone flash-err';setTimeout(()=>{zone.className='scan-zone';resultEl.textContent='';},3000);return;}
+  if(!isInvited){
+    resultEl.className='scan-result warn';resultEl.textContent=`⚠ ${user.nom} ${user.prenom} — non invité à cet événement`;
+    zone.className='scan-zone flash-err';setTimeout(()=>{zone.className='scan-zone';resultEl.textContent='';},3000);
+    showScanPopup(numCarte,'warning',user.nom+' '+user.prenom,'Non invité à cet événement');
+    return;
+  }
   const existing=presences.find(p=>p.evenement_id===currentEventId&&p.user_id===user.id);
-  if(existing&&existing.present){resultEl.className='scan-result ok';resultEl.textContent=`✓ Déjà présent : ${user.nom} ${user.prenom}`;setTimeout(()=>{resultEl.textContent='';},2500);return;}
+  if(existing&&existing.present){
+    resultEl.className='scan-result ok';resultEl.textContent=`✓ Déjà présent : ${user.nom} ${user.prenom}`;
+    setTimeout(()=>{resultEl.textContent='';},2500);
+    showScanPopup(numCarte,'already',user.nom+' '+user.prenom,'Déjà enregistré comme présent');
+    return;
+  }
   const heure=nowHeure();
   try {
     if(existing){
@@ -1418,6 +1462,7 @@ async function doScan(){
     updatePointageStats();renderPointage();renderDashboard();renderEvents();
     resultEl.className='scan-result ok';resultEl.textContent=`✅ ${user.nom} ${user.prenom} — présent à ${heure}`;
     zone.className='scan-zone flash';setTimeout(()=>{zone.className='scan-zone';resultEl.textContent='';},3000);
+    showScanPopup(numCarte,'success',user.nom+' '+user.prenom,'Présence enregistrée à '+heure);
   } catch(e){resultEl.className='scan-result err';resultEl.textContent='Erreur : '+e.message;}
 }
 
@@ -1786,6 +1831,66 @@ function mobileNav(name, el) {
   navigateTo(name);
 }
 
+let scanPopupTimer = null;
+
+function showScanPopup(numCarte, status, nom, info) {
+  // status: 'success' | 'error' | 'warning' | 'already'
+  clearTimeout(scanPopupTimer);
+  const popup = document.getElementById('scan-popup');
+  const overlay = document.getElementById('scan-popup-overlay');
+  const icon = document.getElementById('scan-popup-icon');
+  const badge = document.getElementById('scan-popup-badge');
+  const nameEl = document.getElementById('scan-popup-name');
+  const infoEl = document.getElementById('scan-popup-info');
+  const bar = document.getElementById('scan-popup-bar-fill');
+
+  // Contenu selon le statut
+  const configs = {
+    success: { icon:'✅', color:'var(--success)', borderClass:'success' },
+    error:   { icon:'❌', color:'var(--danger)',  borderClass:'error' },
+    warning: { icon:'⚠️', color:'var(--accent2)', borderClass:'warning' },
+    already: { icon:'✓',  color:'var(--success)', borderClass:'success' },
+  };
+  const cfg = configs[status] || configs.error;
+
+  popup.className = 'scan-popup ' + cfg.borderClass;
+  icon.textContent = cfg.icon;
+  badge.textContent = numCarte;
+  nameEl.textContent = nom || '';
+  nameEl.style.color = cfg.color;
+  infoEl.textContent = info || '';
+
+  // Barre de progression
+  bar.style.background = cfg.color;
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+
+  // Afficher
+  popup.classList.add('show');
+  overlay.classList.add('show');
+
+  // Lancer la barre
+  requestAnimationFrame(() => {
+    bar.style.transition = 'width 3s linear';
+    bar.style.width = '0%';
+  });
+
+  // Masquer après 3s
+  scanPopupTimer = setTimeout(() => {
+    popup.classList.remove('show');
+    overlay.classList.remove('show');
+  }, 3000);
+}
+
+// Fermer en cliquant sur l'overlay
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('scan-popup-overlay')?.addEventListener('click', () => {
+    clearTimeout(scanPopupTimer);
+    document.getElementById('scan-popup').classList.remove('show');
+    document.getElementById('scan-popup-overlay').classList.remove('show');
+  });
+});
+
 function installPWA() {
   if(deferredPrompt) {
     deferredPrompt.prompt();
@@ -1857,6 +1962,16 @@ function showLoading(msg){document.getElementById('loading-text').textContent=ms
 function hideLoading(){document.getElementById('loading-overlay').classList.remove('show');}
 function toast(msg,type='info'){const el=document.createElement('div');el.className=`toast-item ${type}`;el.innerHTML=msg;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),4000);}
 </script>
+  <!-- POPUP SCAN BADGE -->
+  <div class="scan-popup-overlay" id="scan-popup-overlay"></div>
+  <div class="scan-popup" id="scan-popup">
+    <div class="scan-popup-icon" id="scan-popup-icon">📡</div>
+    <div class="scan-popup-badge" id="scan-popup-badge"></div>
+    <div class="scan-popup-name" id="scan-popup-name"></div>
+    <div class="scan-popup-info" id="scan-popup-info"></div>
+    <div class="scan-popup-bar"><div class="scan-popup-bar-fill" id="scan-popup-bar-fill"></div></div>
+  </div>
+
   <!-- BOTTOM NAV MOBILE -->
   <nav class="mobile-nav" id="mobile-nav">
     <button class="mobile-nav-item active" onclick="mobileNav('dashboard',this)">
