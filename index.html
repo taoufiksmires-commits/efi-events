@@ -565,7 +565,7 @@ td{padding:10px 12px;color:var(--text)}
         <div class="card-header"><div class="card-title">📅 Événements récents</div></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Événement</th><th>Date</th><th>Lieu</th><th>Invités</th><th>Présents</th><th></th></tr></thead>
+            <thead><tr><th>Événement</th><th></th><th>Date</th><th>Présents</th></tr></thead>
             <tbody id="dash-events-body"></tbody>
           </table>
         </div>
@@ -1192,11 +1192,9 @@ function renderDashboard(){
     const evPres=presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
     return`<tr>
       <td><strong>${esc(ev.nom)}</strong></td>
+      <td><button class="btn btn-primary btn-sm" onclick="selectEvent('${ev.id}')">🎯 Pointer</button></td>
       <td class="mono">${ev.date?fmtDate(ev.date):'—'}</td>
-      <td class="mono">${esc(ev.lieu||'—')}</td>
-      <td><span class="badge badge-invited">${evInv} invités</span></td>
-      <td><span class="badge badge-present">${evPres} présents</span></td>
-      <td><button class="btn btn-ghost btn-sm" onclick="selectEvent('${ev.id}')">🎯 Pointer</button></td>
+      <td><span class="badge badge-present">${evPres}/${evInv}</span></td>
     </tr>`;
   }).join('');
 }
