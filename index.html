@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.49
+        v1.8.50
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -893,19 +893,6 @@ td{padding:10px 12px;color:var(--text)}
           </div>
         </div>
 
-        <!-- Barre mode + recherche -->
-        <div id="mode-fab-wrap" style="display:none;margin-bottom:12px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <span style="font-size:12px;color:var(--muted)">Mode actuel :</span>
-            <button id="mode-fab" onclick="ouvrirModeDrawer()" style="
-              display:inline-flex;align-items:center;gap:6px;padding:5px 14px;
-              border-radius:20px;border:1px solid var(--border);
-              background:rgba(255,255,255,.05);color:var(--muted);
-              font-weight:600;font-size:11px;cursor:pointer;transition:all .2s">
-              🚪 Entrée <span style="opacity:.6;font-size:10px">▼</span>
-            </button>
-          </div>
-        </div>
         <input class="search-big" type="text" id="pointage-search" placeholder="🔍  Rechercher parmi les invités..." oninput="renderPointage()">
         <div class="pointage-grid" id="pointage-grid"></div>
       </div>
@@ -1861,7 +1848,6 @@ function selectEvent(id){
   const ev=events.find(e=>e.id===id);
   document.getElementById('pointage-no-event').style.display='none';
   document.getElementById('pointage-content').style.display='block';
-  var fabw=document.getElementById('mode-fab-wrap'); if(fabw) fabw.style.display='block';
   // Header pointage
   const imgEl=document.getElementById('pointage-event-img');
   const placEl=document.getElementById('pointage-event-img-placeholder');
@@ -2985,154 +2971,142 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
     });
   </script>
 
-<!-- DRAWER MODE REPAS (style menu admin) -->
-<div id="mode-overlay" onclick="fermerModeDrawer()" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5)"></div>
-<div id="mode-drawer" style="display:none;position:fixed;bottom:60px;left:0;right:0;z-index:401;background:var(--surface);border-top:2px solid var(--accent);border-radius:16px 16px 0 0;padding:16px 16px 8px">
-  <div style="text-align:center;margin-bottom:14px">
-    <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 12px"></div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent)">🎯 Mode de pointage</div>
-  </div>
-  <div style="display:flex;flex-direction:column;gap:8px">
-    <button onclick="activerMode('entree')" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
-      <span style="font-size:20px">🚪</span>
-      <div style="text-align:left">
-        <div style="font-weight:700">Entrée</div>
-        <div style="font-size:11px;color:var(--muted)">Enregistrer les arrivées</div>
-      </div>
-      <span id="chk-entree" style="margin-left:auto;color:var(--accent);font-size:16px">✓</span>
-    </button>
-    <button onclick="activerMode('repas')" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
-      <span style="font-size:20px">🍽️</span>
-      <div style="text-align:left">
-        <div style="font-weight:700">Repas</div>
-        <div style="font-size:11px;color:var(--muted)">Valider les repas des présents</div>
-      </div>
-      <span id="chk-repas" style="margin-left:auto;color:var(--success);font-size:16px;display:none">✓</span>
-    </button>
+<!-- MODAL CHOIX MODE (s'ouvre au clic sur Pointer) -->
+<div id="modal-choix-mode" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:360px;max-width:94vw;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div>
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="font-size:40px;margin-bottom:8px">🎯</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px">Choisir le mode</div>
+      <div id="choix-event-nom" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="confirmerMode('entree')" style="display:flex;align-items:center;gap:14px;padding:16px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(232,37,26,.08)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='rgba(255,255,255,.04)'">
+        <span style="font-size:26px">🚪</span>
+        <div style="text-align:left">
+          <div style="font-weight:700">Entrée</div>
+          <div style="font-size:11px;color:var(--muted)">Enregistrer les arrivées</div>
+        </div>
+        <span style="margin-left:auto;color:var(--muted)">›</span>
+      </button>
+      <button onclick="confirmerMode('repas')" style="display:flex;align-items:center;gap:14px;padding:16px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%;transition:all .2s" onmouseover="this.style.borderColor='var(--success)';this.style.background='rgba(45,212,160,.08)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='rgba(255,255,255,.04)'">
+        <span style="font-size:26px">🍽️</span>
+        <div style="text-align:left">
+          <div style="font-weight:700">Repas</div>
+          <div style="font-size:11px;color:var(--muted)">Valider les repas des présents</div>
+        </div>
+        <span style="margin-left:auto;color:var(--muted)">›</span>
+      </button>
+    </div>
   </div>
 </div>
 
-<!-- PAGE REPAS (cachée par défaut) -->
-<div id="repas-overlay" style="display:none;position:fixed;inset:0;z-index:300;background:var(--bg);overflow-y:auto;padding:16px;padding-bottom:80px">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-    <button onclick="fermerRepas()" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 14px;cursor:pointer;font-size:13px">← Retour</button>
-    <div style="font-family:Bebas Neue,sans-serif;font-size:20px;letter-spacing:1px">🍽️ Repas</div>
-    <span id="repas-compteur" style="margin-left:auto;font-family:Bebas Neue,sans-serif;font-size:22px;color:var(--success)">0/0</span>
+<!-- PAGE REPAS PLEIN ÉCRAN -->
+<div id="page-repas-full" style="display:none;position:fixed;inset:0;z-index:300;background:var(--bg);overflow-y:auto;padding:16px;padding-bottom:80px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;position:sticky;top:0;background:var(--bg);padding-bottom:10px;z-index:10">
+    <button onclick="fermerRepas()" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 14px;cursor:pointer;font-size:13px;white-space:nowrap">← Retour</button>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;flex:1">🍽️ Pointage Repas</div>
+    <div style="text-align:right;flex-shrink:0">
+      <div id="repas-cpt" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--success)">0/0</div>
+      <div style="font-size:10px;color:var(--muted)">servis</div>
+    </div>
   </div>
-  <input type="text" id="repas-search" placeholder="🔍 Rechercher..." oninput="filtrerRepas()" style="width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:13px;margin-bottom:14px;outline:none">
+  <input type="text" id="repas-search" placeholder="🔍 Rechercher..." oninput="filtrerRepas()" style="width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:13px;margin-bottom:12px;outline:none">
   <div id="repas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
 </div>
 
 <script>
 var modeActuel = 'entree';
+var pendingEventId = null;
 
-function ouvrirModeDrawer(){
-  document.getElementById('mode-overlay').style.display='block';
-  document.getElementById('mode-drawer').style.display='block';
-}
-function fermerModeDrawer(){
-  document.getElementById('mode-overlay').style.display='none';
-  document.getElementById('mode-drawer').style.display='none';
-}
-function activerMode(mode){
-  fermerModeDrawer();
+// Intercepter le clic sur Pointer pour afficher le choix
+var _selectEventOriginal = selectEvent;
+selectEvent = function(id) {
+  pendingEventId = id;
+  var ev = events.find(function(e){ return e.id===id; });
+  var nomEl = document.getElementById('choix-event-nom');
+  if(nomEl) nomEl.textContent = ev ? (ev.nom + (ev.date?' · '+fmtDate(ev.date):'')) : '';
+  document.getElementById('modal-choix-mode').style.display = 'flex';
+};
+
+function confirmerMode(mode) {
+  document.getElementById('modal-choix-mode').style.display = 'none';
   modeActuel = mode;
-  var chkE=document.getElementById('chk-entree');
-  var chkR=document.getElementById('chk-repas');
-  if(chkE) chkE.style.display = mode==='entree'?'block':'none';
-  if(chkR) chkR.style.display = mode==='repas'?'block':'none';
-  // Mettre à jour le bouton de façon discrète
-  var fab=document.getElementById('mode-fab');
-  if(fab){
-    fab.innerHTML = mode==='repas'
-      ? '🍽️ Repas <span style="opacity:.6;font-size:10px">▼</span>'
-      : '🚪 Entrée <span style="opacity:.6;font-size:10px">▼</span>';
-    fab.style.background = 'rgba(255,255,255,.05)';
-    fab.style.borderColor = 'var(--border)';
-    fab.style.color = 'var(--muted)';
+  if(mode === 'repas') {
+    // Charger l'événement en arrière-plan puis ouvrir repas
+    _selectEventOriginal(pendingEventId);
+    setTimeout(ouvrirRepas, 400);
+  } else {
+    _selectEventOriginal(pendingEventId);
   }
-  if(mode==='repas') ouvrirRepas();
 }
 
-function ouvrirRepas(){
-  if(!currentEventId){ toast('Sélectionnez un événement d'abord.','error'); return; }
-  document.getElementById('repas-overlay').style.display='block';
+function ouvrirRepas() {
+  document.getElementById('page-repas-full').style.display = 'block';
   afficherRepas();
 }
-function fermerRepas(){
-  document.getElementById('repas-overlay').style.display='none';
-  modeActuel='entree';
-  var chkE=document.getElementById('chk-entree');
-  var chkR=document.getElementById('chk-repas');
-  if(chkE) chkE.style.display='block';
-  if(chkR) chkR.style.display='none';
-  var fab=document.getElementById('mode-fab');
-  if(fab){
-    fab.innerHTML='🚪 Mode Entrée <span style="font-size:10px;opacity:.7">— changer</span>';
-    fab.style.background='rgba(232,37,26,.1)';
-    fab.style.borderColor='var(--accent)';
-    fab.style.color='var(--accent)';
-  }
+
+function fermerRepas() {
+  document.getElementById('page-repas-full').style.display = 'none';
+  modeActuel = 'entree';
 }
 
-function afficherRepas(){
+function afficherRepas() {
   if(!currentEventId) return;
-  var q=(document.getElementById('repas-search').value||'').toLowerCase().trim();
-  var presents=invitations.filter(function(i){ return i.evenement_id===currentEventId; }).map(function(inv){
-    var u=users.find(function(u){ return u.id===inv.user_id; });
-    var p=presences.find(function(p){ return p.evenement_id===currentEventId&&p.user_id===inv.user_id; });
-    var r=repas.find(function(r){ return r.evenement_id===currentEventId&&r.user_id===inv.user_id; });
-    if(!u||!p||!p.present) return null;
-    return {id:u.id,nom:u.nom,prenom:u.prenom,departement:u.departement||'',matricule:u.matricule||'',aMange:!!r};
+  var q = (document.getElementById('repas-search').value||'').toLowerCase().trim();
+  var liste = invitations.filter(function(i){ return i.evenement_id===currentEventId; }).map(function(inv){
+    var u = users.find(function(u){ return u.id===inv.user_id; });
+    var p = presences.find(function(p){ return p.evenement_id===currentEventId && p.user_id===inv.user_id; });
+    var r = repas.find(function(r){ return r.evenement_id===currentEventId && r.user_id===inv.user_id; });
+    if(!u || !p || !p.present) return null; // Seulement les présents
+    return {id:u.id, nom:u.nom, prenom:u.prenom, dept:u.departement||'', mat:u.matricule||'', servi:!!r};
   }).filter(Boolean);
-  var filtered=q?presents.filter(function(r){ return (r.nom+' '+r.prenom).toLowerCase().indexOf(q)>=0; }):presents;
-  var nbMange=repas.filter(function(r){ return r.evenement_id===currentEventId; }).length;
-  var cpt=document.getElementById('repas-compteur');
-  if(cpt) cpt.textContent=nbMange+'/'+presents.length;
-  var html='';
-  if(!filtered.length){
-    html='<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🍽️</div><div>Aucun présent pour le repas.</div></div>';
+  var filtered = q ? liste.filter(function(r){ return (r.nom+' '+r.prenom).toLowerCase().indexOf(q)>=0; }) : liste;
+  var nbServis = repas.filter(function(r){ return r.evenement_id===currentEventId; }).length;
+  var cpt = document.getElementById('repas-cpt');
+  if(cpt) cpt.textContent = nbServis+'/'+liste.length;
+  var html = '';
+  if(!filtered.length) {
+    html = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🍽️</div><div>Aucun invité présent.<br><small style="color:var(--muted)">Seuls les invités marqués présents apparaissent ici.</small></div></div>';
   } else {
     filtered.forEach(function(r){
-      var meta=[r.departement,r.matricule].filter(Boolean).join(' · ')||'—';
-      html+='<div class="pointage-card '+(r.aMange?'is-present':'')+'">';
-      html+='<div><div class="p-name">'+esc(r.nom)+' '+esc(r.prenom)+'</div>';
-      html+='<div class="p-meta">'+meta+'</div>';
-      if(r.aMange) html+='<div class="p-arrive">🍽️ Repas pris</div>';
-      html+='</div>';
-      if(r.aMange){
-        html+='<span class="badge badge-present">✅ Servi</span>';
-      } else {
-        html+='<button class="btn-toggle absent" onclick="servirRepas(''+r.id+'')">🍽️ Servir</button>';
-      }
-      html+='</div>';
+      var meta = [r.dept,r.mat].filter(Boolean).join(' · ')||'—';
+      html += '<div class="pointage-card '+(r.servi?'is-present':'')+'">';
+      html += '<div><div class="p-name">'+esc(r.nom)+' '+esc(r.prenom)+'</div>';
+      html += '<div class="p-meta">'+meta+'</div>';
+      if(r.servi) html += '<div class="p-arrive">🍽️ Repas servi</div>';
+      html += '</div>';
+      html += r.servi
+        ? '<span class="badge badge-present">✅ Servi</span>'
+        : '<button class="btn-toggle absent" onclick="servirRepas(''+r.id+'')">🍽️ Servir</button>';
+      html += '</div>';
     });
   }
-  document.getElementById('repas-grid').innerHTML=html;
+  document.getElementById('repas-grid').innerHTML = html;
 }
 
-function filtrerRepas(){ afficherRepas(); }
+function filtrerRepas() { afficherRepas(); }
 
-async function servirRepas(userId){
+async function servirRepas(userId) {
   if(!currentEventId) return;
-  var dejaMange=repas.find(function(r){ return r.evenement_id===currentEventId&&r.user_id===userId; });
-  if(dejaMange){
-    var u=users.find(function(u){ return u.id===userId; });
-    showScanPopup('🍽️','error',u?u.nom+' '+u.prenom:'?','Repas déjà pris — refusé !');
+  var deja = repas.find(function(r){ return r.evenement_id===currentEventId && r.user_id===userId; });
+  if(deja) {
+    var u = users.find(function(u){ return u.id===userId; });
+    showScanPopup('🍽️','error', u?u.nom+' '+u.prenom:'?', 'Repas déjà pris — refusé !');
     playSound('error');
     return;
   }
-  try{
-    var pointePar=currentPointeur?currentPointeur.display:'—';
-    var res=await fetch(api('repas'),{method:'POST',headers:H(),body:JSON.stringify({user_id:userId,evenement_id:currentEventId,pointe_par:pointePar})});
+  try {
+    var pp = currentPointeur ? currentPointeur.display : '—';
+    var res = await fetch(api('repas'),{method:'POST',headers:H(),body:JSON.stringify({user_id:userId,evenement_id:currentEventId,pointe_par:pp})});
     if(!res.ok) throw new Error((await res.json()).message);
-    var nr=await res.json();
+    var nr = await res.json();
     repas.push(Array.isArray(nr)?nr[0]:nr);
-    var u=users.find(function(u){ return u.id===userId; });
-    var ev=events.find(function(e){ return e.id===currentEventId; });
-    await logHistorique('REPAS',pointePar,u?u.nom+' '+u.prenom:'?',ev?ev.nom:'—','Repas servi');
+    var u = users.find(function(u){ return u.id===userId; });
+    var ev = events.find(function(e){ return e.id===currentEventId; });
+    await logHistorique('REPAS', pp, u?u.nom+' '+u.prenom:'?', ev?ev.nom:'—', 'Repas servi');
     afficherRepas();
-    showScanPopup('🍽️','success',u?u.nom+' '+u.prenom:'?','✅ Repas validé !');
+    showScanPopup('🍽️','success', u?u.nom+' '+u.prenom:'?', '✅ Repas validé !');
     playSound('success');
   } catch(e){ toast('Erreur : '+e.message,'error'); }
 }
