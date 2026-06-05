@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EFI Events — Gestion Présences</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e8251a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EFI Events">
+  <link rel="apple-touch-icon" href="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png">
 <style>
 :root{--bg:#0a0a12;--surface:#10101c;--border:#1e1e32;--accent:#e8251a;--accent2:#ff6b35;--text:#e8e8f0;--muted:#6b6b80;--success:#2dd4a0;--danger:#e8251a;--radius:8px;--sidebar:240px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -433,6 +440,9 @@ td{padding:10px 12px;color:var(--text)}
       <div id="pointeur-badge" style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;font-family:'DM Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
       <button class="btn btn-ghost btn-sm" onclick="logout()" style="width:100%;justify-content:center;font-size:11px;padding:6px">🚪 Changer d'utilisateur</button>
     </div>
+    <button id="install-btn" onclick="installPWA()" style="display:none;margin:8px;padding:10px 14px;background:rgba(232,37,26,.12);border:1px solid rgba(232,37,26,.3);border-radius:8px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;align-items:center;gap:8px;width:calc(100% - 16px)">
+      📲 Installer l'application
+    </button>
     <div class="aside-sync"><span class="sync-dot"></span><span id="sync-time">En direct</span></div>
   </aside>
 
@@ -1641,6 +1651,17 @@ function exportPrint(){
   win.document.close();win.print();toast('🖨️ Impression lancée.','success');
 }
 
+function installPWA() {
+  if(deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(choice => {
+      if(choice.outcome === 'accepted') toast('✅ Application installée !','success');
+      deferredPrompt = null;
+      document.getElementById('install-btn').style.display = 'none';
+    });
+  }
+}
+
 function dl(href,filename){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
 
 function renderMonCompte() {
@@ -1701,5 +1722,29 @@ function showLoading(msg){document.getElementById('loading-text').textContent=ms
 function hideLoading(){document.getElementById('loading-overlay').classList.remove('show');}
 function toast(msg,type='info'){const el=document.createElement('div');el.className=`toast-item ${type}`;el.innerHTML=msg;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),4000);}
 </script>
+  <script>
+    if('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/efi-events/service-worker.js')
+          .then(reg => console.log('SW enregistré:', reg.scope))
+          .catch(err => console.log('SW erreur:', err));
+      });
+    }
+
+    // Bouton d'installation PWA
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('install-btn');
+      if(btn) btn.style.display = 'flex';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      const btn = document.getElementById('install-btn');
+      if(btn) btn.style.display = 'none';
+      deferredPrompt = null;
+    });
+  </script>
 </body>
 </html>
