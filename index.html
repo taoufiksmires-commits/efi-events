@@ -646,7 +646,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.15
+        v1.8.16
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1361,6 +1361,7 @@ function navigateTo(name, pushState=true) {
   if(name==='moncompte') renderMonCompte();
   if(name==='historique') loadHistorique();
   if(name==='evenements'||name==='dashboard') { renderEvents(); renderDashboard(); }
+  if(name==='pointage' && !currentEventId) setTimeout(renderEventPicker, 150);
   // Pousser dans l'historique
   if(pushState) history.pushState({page: name}, '', '#'+name);
   window.scrollTo(0,0);
