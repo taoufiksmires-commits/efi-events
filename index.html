@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.55
+        v1.8.56
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1715,7 +1715,7 @@ function renderDashboard(){
     const evPres=presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
     return`<tr>
       <td><strong>${esc(ev.nom)}</strong></td>
-      <td><button class="btn btn-primary btn-sm btn-pulse" onclick="selectEvent('${ev.id}')">🎯 Pointer</button></td>
+      <td><button class="btn btn-primary btn-sm btn-pulse" onclick="demanderMode('${ev.id}')">🎯 Pointer</button></td>
       <td class="mono">${ev.date?fmtDate(ev.date):'—'}</td>
       <td><span class="badge badge-present">${evPres}/${evInv}</span></td>
     </tr>`;
@@ -1745,7 +1745,7 @@ function renderEvents(){
           ${ev.description?`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">📝 ${esc(ev.description)}</span>`:''}
         </div>
         <div class="event-actions">
-          <button class="btn btn-primary btn-sm btn-pulse" onclick="selectEvent('${ev.id}')">🎯 Pointer</button>
+          <button class="btn btn-primary btn-sm btn-pulse" onclick="demanderMode('${ev.id}')">🎯 Pointer</button>
           <button class="btn btn-ghost btn-sm" onclick="openInviteModal('${ev.id}')">👥 (${evInv})</button>
           ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openEventModal('${ev.id}')">✏️ Modifier</button>`:''}
           ${isAdmin()?`<button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">🗑</button>`:''}
@@ -2819,6 +2819,15 @@ function toggleMobileAdminMenu() {
 function closeMobileAdminMenu() {
   document.getElementById('admin-drawer').style.display = 'none';
   document.getElementById('admin-drawer-overlay').style.display = 'none';
+}
+
+function demanderMode(eventId) {
+  pendingEventId = eventId;
+  var ev = events.find(function(e){ return e.id===eventId; });
+  var nomEl = document.getElementById('choix-event-nom');
+  if(nomEl && ev) nomEl.textContent = ev.nom + (ev.date?' · '+fmtDate(ev.date):'');
+  var modal = document.getElementById('modal-choix-mode');
+  if(modal) modal.style.display = 'flex';
 }
 
 function dl(href,filename){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
