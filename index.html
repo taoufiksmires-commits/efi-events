@@ -578,7 +578,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.5
+        v1.8.6
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1431,7 +1431,6 @@ async function startNFC() {
 
 async function initNFC() {
   if(!('NDEFReader' in window)) {
-    console.log('Web NFC non supporté sur ce navigateur');
     updateNFCStatus('unsupported');
     return;
   }
@@ -1442,20 +1441,14 @@ async function initNFC() {
     // Masquer le bouton une fois activé
     const btn = document.getElementById('nfc-btn');
     if(btn) btn.style.display='none';
-    console.log('✅ NFC actif');
 
     nfcReader.addEventListener('reading', ({message, serialNumber}) => {
-      console.log('📡 NFC lu - Serial:', serialNumber, '| Records:', message?.records?.length);
 
-      // Collecter toutes les infos pour debug
-      let debugInfo = [];
       let cardValue = '';
 
       // 1. Numéro de série
       if(serialNumber) {
         cardValue = serialNumber;
-        debugInfo.push('Serial: ' + serialNumber);
-        console.log('📡 Serial:', serialNumber);
       }
 
       // 2. Records NDEF
@@ -1483,12 +1476,8 @@ async function initNFC() {
             debugInfo.push('Record erreur: '+err.message);
           }
         }
-      } else {
-        debugInfo.push('Aucun record NDEF');
       }
 
-      // Afficher popup debug avec toutes les infos
-      showDebugPopup(debugInfo, cardValue);
 
       if(cardValue) {
         document.getElementById('scan-input').value = cardValue;
@@ -1499,12 +1488,10 @@ async function initNFC() {
     });
 
     nfcReader.addEventListener('readingerror', () => {
-      console.log('❌ Erreur lecture NFC');
       updateNFCStatus('error');
     });
 
   } catch(err) {
-    console.log('❌ NFC erreur:', err.name, err.message);
     if(err.name === 'NotAllowedError') updateNFCStatus('denied');
     else updateNFCStatus('error');
   }
@@ -1559,7 +1546,6 @@ async function doScan(){
   let numCarte=document.getElementById('scan-input').value.trim();
   const resultEl=document.getElementById('scan-result');
   const zone=document.getElementById('scan-zone');
-  console.log('📡 doScan:', JSON.stringify(numCarte));
   if(!numCarte) return;
   document.getElementById('scan-input').value='';
   if(!currentEventId){resultEl.className='scan-result warn';resultEl.textContent='⚠ Sélectionnez un événement d\'abord';return;}
@@ -1569,10 +1555,8 @@ async function doScan(){
     // Retirer absolument tout sauf lettres et chiffres, mettre en majuscules
     return String(s).toUpperCase().replace(/[^A-Z0-9]/g,'');
   };
-  console.log('📡 Normalisé:', n(numCarte));
   console.log('📡 Base:', users.map(u=>u.numero_carte).filter(Boolean).map(c=>({raw:c,norm:n(c)})));
   const user=users.find(u=>n(u.numero_carte)===n(numCarte));
-  console.log('📡 User:', user?user.nom+' '+user.prenom:'INTROUVABLE');
   if(!user){
     resultEl.className='scan-result err';resultEl.textContent='❌ Badge non reconnu : '+numCarte;
     zone.className='scan-zone flash-err';setTimeout(()=>{zone.className='scan-zone';},1500);
@@ -2036,31 +2020,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('scan-popup-overlay').classList.remove('show');
   });
 });
-
-function showDebugPopup(lines, cardValue) {
-  // Créer une popup temporaire de debug
-  const existing = document.getElementById('debug-popup');
-  if(existing) existing.remove();
-
-  const div = document.createElement('div');
-  div.id = 'debug-popup';
-  div.style.cssText = `
-    position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-    background:#0a0a12;border:2px solid var(--accent);border-radius:12px;
-    padding:16px 20px;z-index:9999;max-width:90vw;min-width:280px;
-    font-family:'DM Mono',monospace;font-size:11px;
-    box-shadow:0 8px 32px rgba(0,0,0,.6);
-  `;
-  div.innerHTML = `
-    <div style="color:var(--accent);font-weight:700;margin-bottom:8px;font-size:12px">📡 NFC DEBUG</div>
-    ${lines.map(l=>`<div style="color:var(--text);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05)">${l}</div>`).join('')}
-    <div style="color:var(--success);margin-top:8px">➜ Valeur: ${cardValue||'AUCUNE'}</div>
-    <div style="color:var(--muted);margin-top:6px;font-size:10px">Tap pour fermer</div>
-  `;
-  div.onclick = () => div.remove();
-  document.body.appendChild(div);
-  setTimeout(() => { if(div.parentNode) div.remove(); }, 8000);
-}
 
 function installPWA() {
   if(deferredPrompt) {
