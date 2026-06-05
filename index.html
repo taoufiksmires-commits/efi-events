@@ -653,7 +653,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.26
+        v1.8.27
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -2017,15 +2017,48 @@ async function scanBadgeUser() {
 }
 
 async function saveUser(){
-  const nom=document.getElementById('u-nom').value.trim();
-  const prenom=document.getElementById('u-prenom').value.trim();
+  const nom = document.getElementById('u-nom').value.trim();
+  const prenom = document.getElementById('u-prenom').value.trim();
   if(!nom||!prenom){toast('Nom et Prénom obligatoires.','error');return;}
-  const id=document.getElementById('u-id').value;
-  const payload={nom,prenom,email:document.getElementById('u-email').value.trim()||null,departement:document.getElementById('u-dept').value.trim()||null,matricule:document.getElementById('u-matricule').value.trim()||null,numero_carte:document.getElementById('u-carte').value.trim()||null,contrat:document.getElementById('u-contrat').value||null};
+  const id = document.getElementById('u-id').value;
+  const matricule = document.getElementById('u-matricule').value.trim()||null;
+  const carte = document.getElementById('u-carte').value.trim()||null;
+
+  // Vérifier doublons (en excluant l'utilisateur en cours de modification)
+  const autres = users.filter(u => u.id !== id);
+
+  // 1. Badge en double
+  if(carte) {
+    const doubBadge = autres.find(u => u.numero_carte && norm(u.numero_carte) === norm(carte));
+    if(doubBadge) {
+      toast(`❌ Badge déjà utilisé par ${doubBadge.prenom} ${doubBadge.nom}`, 'error');
+      return;
+    }
+  }
+
+  // 2. Matricule en double
+  if(matricule) {
+    const doubMat = autres.find(u => u.matricule && norm(u.matricule) === norm(matricule));
+    if(doubMat) {
+      toast(`❌ Matricule déjà utilisé par ${doubMat.prenom} ${doubMat.nom}`, 'error');
+      return;
+    }
+  }
+
+  // 3. Même nom + prénom → demander confirmation
+  const doubNom = autres.find(u => norm(u.nom) === norm(nom) && norm(u.prenom) === norm(prenom));
+  if(doubNom) {
+    const conf = confirm(`⚠️ Un salarié "${doubNom.prenom} ${doubNom.nom}" existe déjà (Matricule: ${doubNom.matricule||'—'}, Département: ${doubNom.departement||'—'}).
+
+Voulez-vous quand même créer ce salarié ?`);
+    if(!conf) return;
+  }
+
+  const payload={nom,prenom,email:document.getElementById('u-email').value.trim()||null,departement:document.getElementById('u-dept').value.trim()||null,matricule,numero_carte:carte,contrat:document.getElementById('u-contrat').value||null};
   showLoading('Enregistrement...');
   try {
     if(id){
-      const res=await fetch(api('users')+`?id=eq.${id}`,{method:'POST',headers:{...H(),Prefer:'return=representation'},method:'PATCH',body:JSON.stringify(payload)});
+      const res=await fetch(api('users')+`?id=eq.${id}`,{method:'PATCH',headers:H(),body:JSON.stringify(payload)});
       if(!res.ok) throw new Error((await res.json()).message);
       const idx=users.findIndex(u=>u.id===id);if(idx>=0) users[idx]={...users[idx],...payload};
     } else {
@@ -2071,16 +2104,68 @@ function previewImportUsers(){
 }
 
 async function doImportUsers(){
-  showLoading(`Import ${importUsersParsed.length} salariés...`);
-  let ok=0,skip=0;
+  showLoading(`Vérification des doublons...`);
+  let ok=0, skipDoublon=0, skipErreur=0;
+  const conflits = []; // nom+prenom en doublon à confirmer
+
+  // Pré-vérification : trouver les conflits nom+prénom
   for(const p of importUsersParsed){
-    const exists=users.find(u=>norm(u.nom)===norm(p.nom)&&norm(u.prenom)===norm(p.prenom));
-    if(exists){skip++;continue;}
-    try{const res=await fetch(api('users'),{method:'POST',headers:H(),body:JSON.stringify(p)});if(!res.ok)throw 0;const nu=await res.json();users.push(Array.isArray(nu)?nu[0]:nu);ok++;}catch{skip++;}
+    const doubNom = users.find(u=>norm(u.nom)===norm(p.nom)&&norm(u.prenom)===norm(p.prenom));
+    if(doubNom) conflits.push({p, existing: doubNom});
+  }
+
+  hideLoading();
+
+  // Demander confirmation pour les conflits nom+prénom
+  let confirmerTous = false;
+  if(conflits.length > 0) {
+    const liste = conflits.map(c=>`• ${c.p.prenom} ${c.p.nom} (existant: Mat. ${c.existing.matricule||'—'})`).join('
+');
+    const rep = confirm(`⚠️ ${conflits.length} salarié(s) ont le même nom/prénom :
+
+${liste}
+
+Voulez-vous les ajouter quand même ?`);
+    confirmerTous = rep;
+  }
+
+  showLoading(`Import en cours...`);
+  for(const p of importUsersParsed){
+    // Vérifier badge en double
+    if(p.numero_carte) {
+      const doubBadge = users.find(u=>u.numero_carte && norm(u.numero_carte)===norm(p.numero_carte));
+      if(doubBadge){ skipDoublon++; continue; }
+    }
+    // Vérifier matricule en double
+    if(p.matricule) {
+      const doubMat = users.find(u=>u.matricule && norm(u.matricule)===norm(p.matricule));
+      if(doubMat){ skipDoublon++; continue; }
+    }
+    // Vérifier nom+prénom
+    const doubNom = users.find(u=>norm(u.nom)===norm(p.nom)&&norm(u.prenom)===norm(p.prenom));
+    if(doubNom && !confirmerTous){ skipDoublon++; continue; }
+
+    try{
+      const res=await fetch(api('users'),{method:'POST',headers:H(),body:JSON.stringify(p)});
+      if(!res.ok) throw 0;
+      const nu=await res.json();
+      users.push(Array.isArray(nu)?nu[0]:nu);
+      ok++;
+    } catch{ skipErreur++; }
   }
   hideLoading();
-  toast(`✅ ${ok} importé(s)${skip?' · '+skip+' ignoré(s)':''}`,ok?'success':'info');
-  if(ok>0){document.getElementById('import-users-text').value='';document.getElementById('import-users-preview').innerHTML='';document.getElementById('btn-do-import-users').style.display='none';importUsersParsed=[];document.getElementById('import-users-card').style.display='none';renderUsers();}
+  let msg = `✅ ${ok} importé(s)`;
+  if(skipDoublon) msg += ` · ⚠️ ${skipDoublon} doublon(s) ignoré(s)`;
+  if(skipErreur) msg += ` · ❌ ${skipErreur} erreur(s)`;
+  toast(msg, ok?'success':'info');
+  if(ok>0){
+    document.getElementById('import-users-text').value='';
+    document.getElementById('import-users-preview').innerHTML='';
+    document.getElementById('btn-do-import-users').style.display='none';
+    importUsersParsed=[];
+    document.getElementById('import-users-card').style.display='none';
+    renderUsers();
+  }
 }
 
 // EVENTS CRUD
