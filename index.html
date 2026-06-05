@@ -646,7 +646,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.13
+        v1.8.14
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -683,7 +683,16 @@ td{padding:10px 12px;color:var(--text)}
     <!-- POINTAGE -->
     <div class="page" id="page-pointage">
       <div id="pointage-no-event">
-        <div class="no-event-sel">📅 Sélectionnez un événement depuis <strong>Événements</strong> pour démarrer le pointage.</div>
+        <div class="card card-accent" style="max-width:480px;margin:0 auto">
+          <div class="card-header"><div class="card-title">📅 Choisir un événement</div></div>
+          <div class="card-body">
+            <div id="pointage-event-picker-loading" style="text-align:center;padding:20px;color:var(--muted);font-size:13px">
+              <div class="spinner" style="margin:0 auto 12px"></div>
+              Chargement des événements...
+            </div>
+            <div id="pointage-event-picker" style="display:none;display:flex;flex-direction:column;gap:10px"></div>
+          </div>
+        </div>
       </div>
       <div id="pointage-content" style="display:none">
         <div id="pointage-event-header" style="display:flex;align-items:center;gap:16px;margin-bottom:18px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:12px">
