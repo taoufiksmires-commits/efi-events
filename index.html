@@ -578,7 +578,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.6
+        v1.8.7
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1443,51 +1443,42 @@ async function initNFC() {
     if(btn) btn.style.display='none';
 
     nfcReader.addEventListener('reading', ({message, serialNumber}) => {
-
       let cardValue = '';
 
-      // 1. Numéro de série
+      // 1. Numéro de série (priorité)
       if(serialNumber) {
         cardValue = serialNumber;
       }
 
-      // 2. Records NDEF
-      if(message?.records?.length > 0) {
+      // 2. Records NDEF si pas de serial
+      if(!cardValue && message?.records?.length > 0) {
         for(const record of message.records) {
-          let val = '';
           try {
             if(record.recordType === 'text') {
-              const decoder = new TextDecoder(record.encoding || 'utf-8');
-              val = decoder.decode(record.data);
+              cardValue = new TextDecoder(record.encoding || 'utf-8').decode(record.data);
             } else if(record.recordType === 'url') {
-              val = new TextDecoder().decode(record.data);
+              cardValue = new TextDecoder().decode(record.data);
             } else {
-              try {
-                const buf = record.data?.buffer || record.data;
-                if(buf) {
-                  const bytes = new Uint8Array(buf);
-                  val = Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(':');
-                }
-              } catch(bufErr) { val = ''; }
+              const buf = record.data?.buffer || record.data;
+              if(buf) {
+                const bytes = new Uint8Array(buf);
+                cardValue = Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(':');
+              }
             }
-            debugInfo.push(`Record[${record.recordType}]: ${val}`);
-            if(!cardValue) cardValue = val;
-          } catch(err) {
-            debugInfo.push('Record erreur: '+err.message);
-          }
+            if(cardValue) break;
+          } catch(err) { /* ignorer */ }
         }
       }
-
 
       if(cardValue) {
         document.getElementById('scan-input').value = cardValue;
         doScan();
       } else {
-        showScanPopup('?','error','Aucune donnée lue','Badge vide ou format inconnu');
+        showScanPopup('?', 'error', 'Badge vide', 'Aucune donnée lue');
       }
     });
 
-    nfcReader.addEventListener('readingerror', () => {
+        nfcReader.addEventListener('readingerror', () => {
       updateNFCStatus('error');
     });
 
