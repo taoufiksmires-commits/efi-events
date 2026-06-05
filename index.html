@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.38
+        v1.8.39
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -813,6 +813,16 @@ td{padding:10px 12px;color:var(--text)}
           <div class="stat-card"><div class="stat-label">Absents</div><div class="stat-value orange" id="p-absent">—</div></div>
           <div class="stat-card"><div class="stat-label">Taux</div><div class="stat-value" id="p-taux">—</div></div>
         </div>
+        <!-- Sélecteur mode pointage -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:6px">
+          <button id="mode-entree-btn" onclick="setModePointage('entree')" style="flex:1;padding:10px;border-radius:7px;border:none;cursor:pointer;font-weight:700;font-size:12px;background:var(--accent);color:#fff;transition:all .2s">
+            🚪 Entrée
+          </button>
+          <button id="mode-repas-btn" onclick="setModePointage('repas')" style="flex:1;padding:10px;border-radius:7px;border:none;cursor:pointer;font-weight:700;font-size:12px;background:transparent;color:var(--muted);transition:all .2s">
+            🍽️ Repas
+          </button>
+        </div>
+
         <!-- MODAL NFC au premier accès -->
         <div id="nfc-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(5,5,15,.88);align-items:center;justify-content:center;backdrop-filter:blur(6px)">
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 28px;width:340px;max-width:92vw;text-align:center;position:relative">
@@ -1080,9 +1090,10 @@ const KEY_ = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const STORAGE_URL = `${URL_}/storage/v1/object/public/events-images/`;
 const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png';
 
-let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[];
+let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[], repas=[];
 let currentPointeur = null; // objet pointeur complet
 let currentParkingId = null; // parking sélectionné par le pointeur
+let modePointage = 'entree'; // 'entree' ou 'repas'
 let currentFilter = 'tous';
 const ADMIN_EMAIL = 'taoufik.smires@efiautomotive.com';
 const ADMIN_PWD = 'admin123';
@@ -1438,7 +1449,7 @@ async function revoquerCompte(id) {
 async function loadAll() {
   showLoading('Chargement EFI Events...');
   try {
-    const [u,e,p,inv,pt,pk,ps] = await Promise.all([
+    const [u,e,p,inv,pt,pk,ps,rp] = await Promise.all([
       fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
@@ -1449,7 +1460,7 @@ async function loadAll() {
     ]);
     users=Array.isArray(u)?u:[];events=Array.isArray(e)?e:[];
     presences=Array.isArray(p)?p:[];invitations=Array.isArray(inv)?inv:[];
-    pointeurs=Array.isArray(pt)?pt:[];parkings=Array.isArray(pk)?pk:[];parkingSessions=Array.isArray(ps)?ps:[];
+    pointeurs=Array.isArray(pt)?pt:[];parkings=Array.isArray(pk)?pk:[];parkingSessions=Array.isArray(ps)?ps:[];repas=Array.isArray(rp)?rp:[];
     // Notifier si comptes en attente (admin seulement)
     if(currentPointeur?.role==='admin') {
       const pending = pointeurs.filter(p=>p.role==='en_attente').length;
@@ -1467,7 +1478,7 @@ async function loadAll() {
 
 async function silentRefresh() {
   try {
-    const [u,e,p,inv,pt,pk,ps] = await Promise.all([
+    const [u,e,p,inv,pt,pk,ps,rp] = await Promise.all([
       fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
@@ -1625,6 +1636,63 @@ function verifierAlertParking() {
     playSound('error');
   }
   updateParkingBar();
+}
+
+function setModePointage(mode) {
+  modePointage = mode;
+  const btnEntree = document.getElementById('mode-entree-btn');
+  const btnRepas = document.getElementById('mode-repas-btn');
+  const parkingBar = document.getElementById('parking-bar');
+  if(btnEntree && btnRepas) {
+    btnEntree.style.background = mode==='entree' ? 'var(--accent)' : 'transparent';
+    btnEntree.style.color = mode==='entree' ? '#fff' : 'var(--muted)';
+    btnRepas.style.background = mode==='repas' ? '#2dd4a0' : 'transparent';
+    btnRepas.style.color = mode==='repas' ? '#fff' : 'var(--muted)';
+  }
+  // Masquer parking bar en mode repas
+  if(parkingBar) parkingBar.style.display = (mode==='repas' || !currentParkingId) ? 'none' : 'block';
+  // Changer placeholder recherche
+  const search = document.getElementById('pointage-search');
+  if(search) search.placeholder = mode==='repas' ? '🍽️ Rechercher un invité présent...' : '🔍 Rechercher parmi les invités...';
+  renderPointage();
+}
+
+function getRepasData() {
+  if(!currentEventId) return [];
+  // Seulement les invités présents
+  const invites = invitations.filter(i=>i.evenement_id===currentEventId).map(inv=>{
+    const u = users.find(u=>u.id===inv.user_id);
+    const p = presences.find(p=>p.evenement_id===currentEventId&&p.user_id===inv.user_id);
+    const r = repas.find(r=>r.evenement_id===currentEventId&&r.user_id===inv.user_id);
+    if(!u || !p || !p.present) return null; // Seulement les présents
+    return {...u, a_mange:!!r, repas_id:r?r.id:null, heure_repas:r?r.created_at:null};
+  }).filter(Boolean);
+  return invites;
+}
+
+async function enregistrerRepas(userId) {
+  if(!currentEventId) return;
+  const pointePar = currentPointeur?.display||'—';
+  // Vérifier doublon
+  const dejaMange = repas.find(r=>r.evenement_id===currentEventId&&r.user_id===userId);
+  if(dejaMange) {
+    const user = users.find(u=>u.id===userId);
+    showScanPopup('🍽️','error', user?user.nom+' '+user.prenom:'?', 'Repas déjà pris — accès refusé !');
+    playSound('error');
+    return;
+  }
+  try {
+    const res = await fetch(api('repas'),{method:'POST',headers:H(),body:JSON.stringify({user_id:userId,evenement_id:currentEventId,pointe_par:pointePar})});
+    if(!res.ok) throw new Error((await res.json()).message);
+    const nr = await res.json();
+    repas.push(Array.isArray(nr)?nr[0]:nr);
+    const user = users.find(u=>u.id===userId);
+    await logHistorique('REPAS', pointePar, user?user.nom+' '+user.prenom:'?', events.find(e=>e.id===currentEventId)?.nom||'—', 'Repas enregistré');
+    renderPointage();
+    showScanPopup('🍽️','success', user?user.nom+' '+user.prenom:'?', 'Repas validé ✅');
+    playSound('success');
+    toast('🍽️ Repas enregistré !','success');
+  } catch(e){ toast('Erreur : '+e.message,'error'); }
 }
 
 function refreshAll(){renderDashboard();renderEvents();renderUsers();populateExportSel();if(currentEventId)renderPointage();}
@@ -2071,6 +2139,20 @@ async function doScan(){
     showScanPopup(numCarte,'warning',user.nom+' '+user.prenom,'Non invité à cet événement');
     return;
   }
+
+  // MODE REPAS
+  if(modePointage === 'repas') {
+    const isPresent = presences.some(p=>p.evenement_id===currentEventId&&p.user_id===user.id&&p.present);
+    if(!isPresent) {
+      showScanPopup(numCarte,'error',user.nom+' '+user.prenom,'Non marqué présent — repas refusé !');
+      playSound('error');
+      document.getElementById('scan-input').value='';
+      return;
+    }
+    await enregistrerRepas(user.id);
+    document.getElementById('scan-input').value='';
+    return;
+  }
   const existing=presences.find(p=>p.evenement_id===currentEventId&&p.user_id===user.id);
   if(existing&&existing.present){
     resultEl.className='scan-result err';resultEl.textContent=`🔴 Déjà présent : ${user.nom} ${user.prenom}`;
@@ -2481,7 +2563,8 @@ function getExportData(){
       const p=presences.find(p=>p.evenement_id===ev.id&&p.user_id===u.id);
       const present=p?p.present:false;
       if(filterPres===''||(filterPres==='true'&&present)||(filterPres==='false'&&!present)){
-        rows.push({evenement:ev.nom,date:ev.date||'',lieu:ev.lieu||'',responsable:ev.responsable||'',nom:u.nom,prenom:u.prenom,email:u.email||'',departement:u.departement||'',contrat:u.contrat||'',matricule:u.matricule||'',numero_carte:u.numero_carte||'',present:present?'Oui':'Non',heure:p&&p.horraire_arrivee?p.horraire_arrivee.slice(0,5):'',pointe_par:p&&p.pointe_par?p.pointe_par:''});
+        const r2=repas.find(r=>r.evenement_id===ev.id&&r.user_id===u.id);
+        rows.push({evenement:ev.nom,date:ev.date||'',lieu:ev.lieu||'',responsable:ev.responsable||'',nom:u.nom,prenom:u.prenom,email:u.email||'',departement:u.departement||'',contrat:u.contrat||'',matricule:u.matricule||'',numero_carte:u.numero_carte||'',present:present?'Oui':'Non',heure:p&&p.horraire_arrivee?p.horraire_arrivee.slice(0,5):'',pointe_par:p&&p.pointe_par?p.pointe_par:'',repas:r2?'Oui':'Non'});
       }
     });
   });
@@ -2490,7 +2573,7 @@ function getExportData(){
 
 function exportCSV(){
   const rows=getExportData();if(!rows.length){toast('Aucune donnée.','error');return;}
-  const h=['Événement','Date','Lieu','Responsable','Nom','Prénom','Email','Département','Contrat','Matricule','N° Carte','Présent','Heure','Pointé par'];
+  const h=['Événement','Date','Lieu','Responsable','Nom','Prénom','Email','Département','Contrat','Matricule','N° Carte','Présent','Heure','Pointé par','Repas'];
   const csv=[h,...rows.map(r=>Object.values(r))].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   dl('data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv),`EFI-Events-${new Date().toISOString().slice(0,10)}.csv`);
   toast('📥 CSV téléchargé.','success');
