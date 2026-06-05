@@ -184,19 +184,25 @@ td{padding:10px 12px;color:var(--text)}
 
       <!-- LOGIN -->
       <div id="tab-login">
+        <form id="login-form" onsubmit="event.preventDefault();doEmailLogin()" autocomplete="on">
         <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
-          <div class="form-group"><label>Email</label><input type="email" id="li-email" placeholder="vous@efi.com" onkeydown="if(event.key==='Enter')document.getElementById('li-pwd').focus()"></div>
+          <div class="form-group"><label>Email</label><input type="email" id="li-email" name="email" autocomplete="email" placeholder="vous@efi.com" onkeydown="if(event.key==='Enter')document.getElementById('li-pwd').focus()"></div>
           <div class="form-group">
             <label>Mot de passe</label>
             <div style="position:relative">
-              <input type="password" id="li-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doEmailLogin()" style="padding-right:40px">
+              <input type="password" id="li-pwd" name="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doEmailLogin()" style="padding-right:40px">
               <span onclick="togglePwd('li-pwd',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted)">👁</span>
             </div>
           </div>
         </div>
         <div id="login-error" style="font-size:11px;color:var(--danger);margin-bottom:10px;display:none;background:rgba(232,37,26,.08);padding:8px 12px;border-radius:6px"></div>
-        <button class="btn btn-primary" onclick="doEmailLogin()" style="width:100%;justify-content:center;margin-bottom:12px">Se connecter →</button>
-        <div style="text-align:center">
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:12px">Se connecter →</button>
+        </form>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0">
+            <input type="checkbox" id="remember-me" style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer" checked>
+            Se souvenir de moi
+          </label>
           <span onclick="switchAuthTab('reset')" style="font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">Mot de passe oublié ?</span>
         </div>
         <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
@@ -211,18 +217,18 @@ td{padding:10px 12px;color:var(--text)}
             <div class="form-group"><label>Nom *</label><input type="text" id="su-nom" placeholder="Dupont"></div>
             <div class="form-group"><label>Prénom *</label><input type="text" id="su-prenom" placeholder="Jean"></div>
           </div>
-          <div class="form-group"><label>Email *</label><input type="email" id="su-email" placeholder="vous@efi.com"></div>
+          <div class="form-group"><label>Email *</label><input type="email" id="su-email" name="email" autocomplete="email" placeholder="vous@efi.com"></div>
           <div class="form-group">
             <label>Mot de passe *</label>
             <div style="position:relative">
-              <input type="password" id="su-pwd" placeholder="Min. 6 caractères" style="padding-right:40px">
+              <input type="password" id="su-pwd" name="new-password" autocomplete="new-password" placeholder="Min. 6 caractères" style="padding-right:40px">
               <span onclick="togglePwd('su-pwd',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted)">👁</span>
             </div>
           </div>
           <div class="form-group">
             <label>Confirmer le mot de passe *</label>
             <div style="position:relative">
-              <input type="password" id="su-pwd2" placeholder="Répéter le mot de passe" onkeydown="if(event.key==='Enter')doSignup()" style="padding-right:40px">
+              <input type="password" id="su-pwd2" name="confirm-password" autocomplete="new-password" placeholder="Répéter le mot de passe" onkeydown="if(event.key==='Enter')doSignup()" style="padding-right:40px">
               <span onclick="togglePwd('su-pwd2',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted)">👁</span>
             </div>
           </div>
@@ -659,14 +665,16 @@ const H = () => ({apikey:KEY_,Authorization:`Bearer ${KEY_}`,'Content-Type':'app
 const norm = s => (s||'').toLowerCase().trim();
 
 window.onload = () => {
-  const saved = sessionStorage.getItem('efi_pointeur');
+  const saved = localStorage.getItem('efi_pointeur') || sessionStorage.getItem('efi_pointeur');
   if(saved) {
-    currentPointeur = JSON.parse(saved);
-    if(currentPointeur.role === 'en_attente') {
-      showPending();
-    } else {
-      showApp();
-    }
+    try {
+      currentPointeur = JSON.parse(saved);
+      if(currentPointeur.role === 'en_attente') {
+        showPending();
+      } else {
+        showApp();
+      }
+    } catch(e) { localStorage.removeItem('efi_pointeur'); sessionStorage.removeItem('efi_pointeur'); }
   }
 
 };
@@ -699,7 +707,7 @@ async function doEmailLogin() {
   // Compte admin local — vérification directe sans hash
   if(email.toLowerCase()===ADMIN_EMAIL.toLowerCase() && pwd===ADMIN_PWD) {
     currentPointeur = {id:'admin',nom:'Admin',prenom:'EFI',email:ADMIN_EMAIL,role:'admin',display:'Admin EFI'};
-    sessionStorage.setItem('efi_pointeur', JSON.stringify(currentPointeur));
+    saveSession(currentPointeur);
     showApp(); return;
   }
 
@@ -718,7 +726,7 @@ async function doEmailLogin() {
 
     // 3. Connecter
     currentPointeur = {...p, display: p.prenom+' '+p.nom};
-    sessionStorage.setItem('efi_pointeur', JSON.stringify(currentPointeur));
+    saveSession(currentPointeur);
     if(p.role==='en_attente') { showPending(); return; }
     showApp();
   } catch(e) { showLoginErr('Erreur : '+e.message); }
@@ -845,9 +853,23 @@ function updatePointeurBadge() {
 }
 
 function logout() {
+  localStorage.removeItem('efi_pointeur');
   sessionStorage.removeItem('efi_pointeur');
   currentPointeur = null;
   location.reload();
+}
+
+function saveSession(pointeur) {
+  const remember = document.getElementById('remember-me');
+  const shouldRemember = remember ? remember.checked : true;
+  const data = JSON.stringify(pointeur);
+  if(shouldRemember) {
+    localStorage.setItem('efi_pointeur', data);
+    sessionStorage.removeItem('efi_pointeur');
+  } else {
+    sessionStorage.setItem('efi_pointeur', data);
+    localStorage.removeItem('efi_pointeur');
+  }
 }
 
 // GESTION COMPTES (admin)
