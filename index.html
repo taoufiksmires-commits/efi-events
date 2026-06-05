@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.53
+        v1.8.54
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1817,6 +1817,19 @@ async function uploadPhoto(file, eventId){
 
 // SELECT EVENT
 function selectEvent(id){
+  // Afficher le choix mode si pas encore fait
+  if(typeof modeActuel === 'undefined' || !document.getElementById('page-repas-full') || document.getElementById('page-repas-full').style.display==='none') {
+    if(typeof confirmerMode === 'undefined') {
+      currentEventId=id;
+    } else {
+      pendingEventId = id;
+      var ev = events.find(function(e){ return e.id===id; });
+      var nomEl = document.getElementById('choix-event-nom');
+      if(nomEl) nomEl.textContent = ev ? ev.nom + (ev.date?' · '+fmtDate(ev.date):'') : '';
+      document.getElementById('modal-choix-mode').style.display = 'flex';
+      return;
+    }
+  }
   currentEventId=id;
   const ev=events.find(e=>e.id===id);
   document.getElementById('pointage-no-event').style.display='none';
@@ -2992,26 +3005,11 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
 var modeActuel = 'entree';
 var pendingEventId = null;
 
-// Intercepter le clic sur Pointer pour afficher le choix
-var _selectEventOriginal = selectEvent;
-selectEvent = function(id) {
-  pendingEventId = id;
-  var ev = events.find(function(e){ return e.id===id; });
-  var nomEl = document.getElementById('choix-event-nom');
-  if(nomEl) nomEl.textContent = ev ? (ev.nom + (ev.date?' · '+fmtDate(ev.date):'')) : '';
-  document.getElementById('modal-choix-mode').style.display = 'flex';
-};
-
 function confirmerMode(mode) {
   document.getElementById('modal-choix-mode').style.display = 'none';
   modeActuel = mode;
-  if(mode === 'repas') {
-    // Charger l'événement en arrière-plan puis ouvrir repas
-    _selectEventOriginal(pendingEventId);
-    setTimeout(ouvrirRepas, 400);
-  } else {
-    _selectEventOriginal(pendingEventId);
-  }
+  selectEvent(pendingEventId);
+  if(mode === 'repas') setTimeout(ouvrirRepas, 500);
 }
 
 function ouvrirRepas() {
