@@ -774,6 +774,19 @@ const H = () => ({apikey:KEY_,Authorization:`Bearer ${KEY_}`,'Content-Type':'app
 const norm = s => (s||'').toLowerCase().trim();
 
 window.onload = () => {
+  // Gérer bouton retour
+  window.addEventListener('popstate', e => {
+    const page = e.state?.page || 'dashboard';
+    navigateTo(page, false);
+    if(e.state?.eventId) {
+      currentEventId = e.state.eventId;
+      document.getElementById('pointage-no-event').style.display='none';
+      document.getElementById('pointage-content').style.display='block';
+      updatePointageStats(); renderPointage();
+    }
+  });
+  history.replaceState({page:'dashboard'}, '', window.location.pathname);
+
   const saved = localStorage.getItem('efi_pointeur') || sessionStorage.getItem('efi_pointeur');
   if(saved) {
     try {
