@@ -574,6 +574,29 @@ td{padding:10px 12px;color:var(--text)}
 </div>
 
 <div id="loading-overlay"><div class="loading-box"><div class="spinner"></div><div id="loading-text">Chargement...</div></div></div>
+<!-- DRAWER ADMIN MOBILE -->
+<div id="admin-drawer-overlay" onclick="closeMobileAdminMenu()" style="display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.5)"></div>
+<div id="admin-drawer" style="display:none;position:fixed;bottom:60px;left:0;right:0;z-index:160;background:var(--surface);border-top:2px solid var(--accent);border-radius:16px 16px 0 0;padding:16px 16px 8px">
+  <div style="text-align:center;margin-bottom:14px">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 12px"></div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent)">🔑 Menu Admin</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <button onclick="closeMobileAdminMenu();mobileNav('evenements',document.querySelectorAll('.mobile-nav-item')[1])" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
+      <span style="font-size:20px">📅</span> Gérer les événements
+    </button>
+    <button onclick="closeMobileAdminMenu();openComptesModal()" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
+      <span style="font-size:20px">👤</span> Gérer les comptes <span id="mobile-pending-badge" style="display:none;background:var(--accent);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:auto"></span>
+    </button>
+    <button onclick="closeMobileAdminMenu();mobileNav('parkings',null)" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
+      <span style="font-size:20px">🅿️</span> Gérer les parkings
+    </button>
+    <button onclick="closeMobileAdminMenu();mobileNav('users',document.querySelectorAll('.mobile-nav-item')[3])" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
+      <span style="font-size:20px">👥</span> Gérer les salariés
+    </button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- MODAL USER -->
@@ -726,7 +749,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.34
+        v1.8.35
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1213,6 +1236,9 @@ function showApp() {
   if(adminItem) adminItem.style.display = currentPointeur?.role==='admin' ? 'flex' : 'none';
   const parkItem = document.getElementById('parkings-menu-item');
   if(parkItem) parkItem.style.display = currentPointeur?.role==='admin' ? 'flex' : 'none';
+  // Bouton admin dans la bottom nav mobile
+  const mobileAdminBtn = document.getElementById('mobile-admin-btn');
+  if(mobileAdminBtn) mobileAdminBtn.style.display = currentPointeur?.role==='admin' ? 'flex' : 'none';
   loadAll().then(() => {
     setInterval(silentRefresh, 6000);
     document.addEventListener('keydown', onGlobalKey);
@@ -1419,6 +1445,9 @@ async function loadAll() {
       const badge = document.getElementById('admin-menu-item');
       if(badge && pending>0) badge.innerHTML=`<span class="icon">🔑</span> Comptes <span style="background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:4px">${pending}</span>`;
       else if(badge) badge.innerHTML='<span class="icon">🔑</span> Comptes';
+      // Badge mobile
+      const mobilePending = document.getElementById('mobile-pending-badge');
+      if(mobilePending) { mobilePending.textContent = pending; mobilePending.style.display = pending>0?'inline':'none'; }
     }
     refreshAll();
   } catch(err){toast('Erreur : '+err.message,'error');}
@@ -2680,6 +2709,19 @@ async function deleteParking(id) {
   } catch(e){ toast('Erreur : '+e.message,'error'); }
 }
 
+function toggleMobileAdminMenu() {
+  const drawer = document.getElementById('admin-drawer');
+  const overlay = document.getElementById('admin-drawer-overlay');
+  const isOpen = drawer.style.display !== 'none';
+  drawer.style.display = isOpen ? 'none' : 'block';
+  overlay.style.display = isOpen ? 'none' : 'block';
+}
+
+function closeMobileAdminMenu() {
+  document.getElementById('admin-drawer').style.display = 'none';
+  document.getElementById('admin-drawer-overlay').style.display = 'none';
+}
+
 function dl(href,filename){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
 
 function renderMonCompte() {
@@ -2772,6 +2814,9 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('moncompte',this)">
       <span class="mn-icon">⚙️</span><span>Compte</span>
+    </button>
+    <button class="mobile-nav-item" id="mobile-admin-btn" onclick="toggleMobileAdminMenu()" style="display:none">
+      <span class="mn-icon">🔑</span><span>Admin</span>
     </button>
   </nav>
 
