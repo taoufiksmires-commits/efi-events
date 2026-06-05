@@ -578,7 +578,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.7
+        v1.8.8
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1563,8 +1563,8 @@ async function doScan(){
   }
   const existing=presences.find(p=>p.evenement_id===currentEventId&&p.user_id===user.id);
   if(existing&&existing.present){
-    resultEl.className='scan-result ok';resultEl.textContent=`✓ Déjà présent : ${user.nom} ${user.prenom}`;
-    setTimeout(()=>{resultEl.textContent='';},2500);
+    resultEl.className='scan-result err';resultEl.textContent=`🔴 Déjà présent : ${user.nom} ${user.prenom}`;
+    setTimeout(()=>{resultEl.textContent='';},5000);
     showScanPopup(numCarte,'already',user.nom+' '+user.prenom,'Déjà enregistré comme présent');
     return;
   }
@@ -1954,8 +1954,38 @@ function mobileNav(name, el) {
 
 let scanPopupTimer = null;
 
+// Sons via Web Audio API
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if(type === 'success') {
+      // Deux bips montants — OK
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.35);
+    } else {
+      // Bip grave descendant — Erreur
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(300, ctx.currentTime);
+      osc.frequency.setValueAtTime(150, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    }
+  } catch(e) { /* audio non supporté */ }
+}
+
 function showScanPopup(numCarte, status, nom, info) {
-  // status: 'success' | 'error' | 'warning' | 'already'
   clearTimeout(scanPopupTimer);
   const popup = document.getElementById('scan-popup');
   const overlay = document.getElementById('scan-popup-overlay');
@@ -1965,12 +1995,11 @@ function showScanPopup(numCarte, status, nom, info) {
   const infoEl = document.getElementById('scan-popup-info');
   const bar = document.getElementById('scan-popup-bar-fill');
 
-  // Contenu selon le statut
   const configs = {
-    success: { icon:'✅', color:'var(--success)', borderClass:'success' },
-    error:   { icon:'❌', color:'var(--danger)',  borderClass:'error' },
-    warning: { icon:'⚠️', color:'var(--accent2)', borderClass:'warning' },
-    already: { icon:'✓',  color:'var(--success)', borderClass:'success' },
+    success: { icon:'✅', color:'var(--success)',  borderClass:'success', duration:3000, sound:'success' },
+    error:   { icon:'❌', color:'var(--danger)',    borderClass:'error',   duration:6000, sound:'error' },
+    warning: { icon:'⚠️', color:'var(--accent2)',  borderClass:'warning', duration:6000, sound:'error' },
+    already: { icon:'🔴', color:'var(--danger)',    borderClass:'error',   duration:6000, sound:'error' },
   };
   const cfg = configs[status] || configs.error;
 
@@ -1986,21 +2015,21 @@ function showScanPopup(numCarte, status, nom, info) {
   bar.style.transition = 'none';
   bar.style.width = '100%';
 
-  // Afficher
   popup.classList.add('show');
   overlay.classList.add('show');
 
-  // Lancer la barre
+  // Son
+  playSound(cfg.sound);
+
   requestAnimationFrame(() => {
-    bar.style.transition = 'width 3s linear';
+    bar.style.transition = `width ${cfg.duration/1000}s linear`;
     bar.style.width = '0%';
   });
 
-  // Masquer après 3s
   scanPopupTimer = setTimeout(() => {
     popup.classList.remove('show');
     overlay.classList.remove('show');
-  }, 3000);
+  }, cfg.duration);
 }
 
 // Fermer en cliquant sur l'overlay
