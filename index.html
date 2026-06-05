@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.60
+        v1.8.61
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -2837,6 +2837,13 @@ function demanderMode(eventId) {
   if(modal) modal.style.display = 'flex';
 }
 
+function confirmerMode(mode) {
+  document.getElementById('modal-choix-mode').style.display = 'none';
+  modeActuel = mode;
+  window._modeEnAttente = mode;
+  selectEvent(pendingEventId);
+}
+
 function dl(href,filename){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
 
 function renderMonCompte() {
@@ -3017,13 +3024,8 @@ selectEvent = function(id) {
   document.getElementById('modal-choix-mode').style.display = 'flex';
 };
 
-function confirmerMode(mode) {
-  alert('confirmerMode appelé: ' + mode + ' | event: ' + pendingEventId);
-  document.getElementById('modal-choix-mode').style.display = 'none';
-  modeActuel = mode;
-  window._modeEnAttente = mode;
-  selectEvent(pendingEventId);
-}
+// confirmerMode déplacé dans script principal
+
 
 function ouvrirRepas() {
   document.getElementById('page-repas-full').style.display = 'block';
