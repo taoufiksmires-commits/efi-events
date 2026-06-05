@@ -630,7 +630,6 @@ td{padding:10px 12px;color:var(--text)}
     <div class="aside-item" onclick="goPage('users',this)"><span class="icon">👥</span> Salariés</div>
     <div class="aside-item" onclick="goPage('export',this)"><span class="icon">📤</span> Export</div>
     <div class="aside-item" onclick="goPage('historique',this)"><span class="icon">📜</span> Historique</div>
-    <div class="aside-item" onclick="goPage('historique',this)"><span class="icon">📜</span> Historique</div>
     <div class="aside-item" onclick="goPage('moncompte',this)"><span class="icon">⚙️</span> Mon compte</div>
     <div class="aside-item" id="admin-menu-item" onclick="openComptesModal()" style="display:none"><span class="icon">🔑</span> Comptes</div>
     <div style="padding:10px 14px;border-top:1px solid var(--border)">
@@ -647,7 +646,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.12
+        v1.8.13
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -854,43 +853,6 @@ td{padding:10px 12px;color:var(--text)}
               <button class="btn btn-danger" onclick="logout()" style="width:100%;justify-content:center">🚪 Se déconnecter</button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- HISTORIQUE -->
-    <div class="page" id="page-historique">
-      <div class="card card-accent">
-        <div class="card-header">
-          <div class="card-title">📜 Historique des actions</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <select id="hist-filter-action" onchange="renderHistorique()" style="width:160px;margin:0">
-              <option value="">Toutes les actions</option>
-              <option value="PRÉSENCE">✅ Présence</option>
-              <option value="SUPPRESSION">❌ Suppression</option>
-            </select>
-            <select id="hist-filter-event" onchange="renderHistorique()" style="width:180px;margin:0">
-              <option value="">Tous les événements</option>
-            </select>
-            <button class="btn btn-ghost btn-sm" onclick="loadHistorique()">↻ Actualiser</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date/Heure</th>
-                <th>Action</th>
-                <th>Pointeur</th>
-                <th>Participant</th>
-                <th>Événement</th>
-                <th>Détails</th>
-              </tr>
-            </thead>
-            <tbody id="historique-body">
-              <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📜</div><div>Chargement...</div></div></td></tr>
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -2451,9 +2413,6 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('export',this)">
       <span class="mn-icon">📤</span><span>Export</span>
-    </button>
-    <button class="mobile-nav-item" onclick="mobileNav('historique',this)">
-      <span class="mn-icon">📜</span><span>Historique</span>
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('historique',this)">
       <span class="mn-icon">📜</span><span>Historique</span>
