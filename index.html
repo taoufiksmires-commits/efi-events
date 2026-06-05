@@ -426,30 +426,20 @@ td{padding:10px 12px;color:var(--text)}
   </div>
 </div>
 
-<!-- MODAL RAISON SUPPRESSION -->
-<div class="modal-overlay" id="modal-raison">
-  <div class="modal" style="width:420px">
-    <button class="modal-close" onclick="closeModal('modal-raison')">✕</button>
-    <div class="modal-title">❌ Supprimer la présence</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Veuillez indiquer la raison de cette suppression. Elle sera enregistrée dans l'historique.</p>
-    <input type="hidden" id="raison-user-id">
-    <input type="hidden" id="raison-present">
-    <input type="hidden" id="raison-presence-id">
-    <div class="form-group" style="margin-bottom:16px">
-      <label>Raison *</label>
-      <select id="raison-select" onchange="toggleRaisonAutre(this.value)" style="margin-bottom:8px">
-        <option value="">-- Sélectionner --</option>
-        <option value="Erreur de pointage">Erreur de pointage</option>
-        <option value="Départ anticipé">Départ anticipé</option>
-        <option value="Absence justifiée">Absence justifiée</option>
-        <option value="Badge scanné par erreur">Badge scanné par erreur</option>
-        <option value="Autre">Autre (préciser)</option>
-      </select>
-      <textarea id="raison-autre" placeholder="Précisez la raison..." style="display:none;min-height:70px"></textarea>
+<!-- MODAL NOUVEAU PARKING -->
+<div class="modal-overlay" id="modal-nouveau-parking">
+  <div class="modal" style="width:380px">
+    <button class="modal-close" onclick="closeModal('modal-nouveau-parking')">✕</button>
+    <div class="modal-title" id="np-title">Nouveau parking</div>
+    <input type="hidden" id="np-id">
+    <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="form-group"><label>Nom *</label><input type="text" id="np-nom" placeholder="Parking Usine C"></div>
+      <div class="form-group"><label>Capacité (places) *</label><input type="number" id="np-capacite" min="1" value="100"></div>
+      <div class="form-group"><label>Actif</label><select id="np-actif"><option value="true">Oui</option><option value="false">Non</option></select></div>
     </div>
     <div class="btn-actions">
-      <button class="btn btn-danger" onclick="confirmerSuppression()">Confirmer la suppression</button>
-      <button class="btn btn-ghost" onclick="closeModal('modal-raison')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveParking()">Enregistrer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-nouveau-parking')">Annuler</button>
     </div>
   </div>
 </div>
@@ -478,6 +468,88 @@ td{padding:10px 12px;color:var(--text)}
     <div class="btn-actions">
       <button class="btn btn-danger" onclick="confirmerSuppression()">Confirmer la suppression</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-raison')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOUVEAU PARKING -->
+<div class="modal-overlay" id="modal-nouveau-parking">
+  <div class="modal" style="width:380px">
+    <button class="modal-close" onclick="closeModal('modal-nouveau-parking')">✕</button>
+    <div class="modal-title" id="np-title">Nouveau parking</div>
+    <input type="hidden" id="np-id">
+    <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="form-group"><label>Nom *</label><input type="text" id="np-nom" placeholder="Parking Usine C"></div>
+      <div class="form-group"><label>Capacité (places) *</label><input type="number" id="np-capacite" min="1" value="100"></div>
+      <div class="form-group"><label>Actif</label><select id="np-actif"><option value="true">Oui</option><option value="false">Non</option></select></div>
+    </div>
+    <div class="btn-actions">
+      <button class="btn btn-primary" onclick="saveParking()">Enregistrer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-nouveau-parking')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RAISON SUPPRESSION -->
+<div class="modal-overlay" id="modal-raison">
+  <div class="modal" style="width:420px">
+    <button class="modal-close" onclick="closeModal('modal-raison')">✕</button>
+    <div class="modal-title">❌ Supprimer la présence</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Veuillez indiquer la raison de cette suppression. Elle sera enregistrée dans l'historique.</p>
+    <input type="hidden" id="raison-user-id">
+    <input type="hidden" id="raison-present">
+    <input type="hidden" id="raison-presence-id">
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Raison *</label>
+      <select id="raison-select" onchange="toggleRaisonAutre(this.value)" style="margin-bottom:8px">
+        <option value="">-- Sélectionner --</option>
+        <option value="Erreur de pointage">Erreur de pointage</option>
+        <option value="Départ anticipé">Départ anticipé</option>
+        <option value="Absence justifiée">Absence justifiée</option>
+        <option value="Badge scanné par erreur">Badge scanné par erreur</option>
+        <option value="Autre">Autre (préciser)</option>
+      </select>
+      <textarea id="raison-autre" placeholder="Précisez la raison..." style="display:none;min-height:70px"></textarea>
+    </div>
+    <div class="btn-actions">
+      <button class="btn btn-danger" onclick="confirmerSuppression()">Confirmer la suppression</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-raison')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PARKING -->
+<div class="modal-overlay" id="modal-parking">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">🅿️ Votre position</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+      Où êtes-vous positionné pour ce pointage ?
+    </p>
+    <div id="parking-choices" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px">
+      <button onclick="choisirParking(null)" style="width:100%;padding:13px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-size:13px;cursor:pointer;text-align:left">
+        🚪 Entrée principale — pas de parking
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INIT VOITURES -->
+<div class="modal-overlay" id="modal-init-voitures">
+  <div class="modal" style="width:380px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">🚗</div>
+    <div class="modal-title" id="init-parking-nom">Parking Usine A</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+      Vous êtes le premier pointeur sur ce parking.<br>
+      Combien de voitures sont <strong>déjà garées</strong> ?
+    </p>
+    <div class="form-group" style="margin-bottom:20px;text-align:left">
+      <label>Nombre de voitures déjà présentes</label>
+      <input type="number" id="init-voitures-nb" min="0" value="0" style="font-size:18px;text-align:center;padding:12px">
+    </div>
+    <div class="btn-actions" style="justify-content:center">
+      <button class="btn btn-primary" onclick="confirmerInitVoitures()">Confirmer →</button>
+      <button class="btn btn-ghost" onclick="confirmerInitVoitures0()">0 voiture</button>
     </div>
   </div>
 </div>
@@ -639,6 +711,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="aside-item" onclick="goPage('historique',this)"><span class="icon">📜</span> Historique</div>
     <div class="aside-item" onclick="goPage('moncompte',this)"><span class="icon">⚙️</span> Mon compte</div>
     <div class="aside-item" id="admin-menu-item" onclick="openComptesModal()" style="display:none"><span class="icon">🔑</span> Comptes</div>
+    <div class="aside-item" id="parkings-menu-item" onclick="goPage('parkings',this)" style="display:none"><span class="icon">🅿️</span> Parkings</div>
     <div style="padding:10px 14px;border-top:1px solid var(--border)">
       <div id="pointeur-badge" style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px;font-family:'DM Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
       <button class="btn btn-ghost btn-sm" onclick="logout()" style="width:100%;justify-content:center;font-size:11px;padding:6px">🚪 Changer d'utilisateur</button>
@@ -653,7 +726,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.31
+        v1.8.32
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -758,6 +831,25 @@ td{padding:10px 12px;color:var(--text)}
         </div>
         <!-- Champ scan caché (utilisé par NFC et clavier) -->
         <input id="scan-input" type="text" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" autocomplete="off" onkeydown="if(event.key==='Enter')doScan()">
+        <!-- Barre parking -->
+        <div id="parking-bar" style="display:none;margin-bottom:14px">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:20px">🅿️</span>
+              <div>
+                <div style="font-weight:700;font-size:13px" id="parking-bar-nom">—</div>
+                <div style="font-size:11px;color:var(--muted)" id="parking-bar-places">—</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div id="parking-bar-jauge" style="width:100px;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+                <div id="parking-bar-fill" style="height:100%;background:var(--success);border-radius:4px;transition:width .3s"></div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="ouvrirModalParking()">Changer</button>
+            </div>
+          </div>
+        </div>
+
         <input class="search-big" type="text" id="pointage-search" placeholder="🔍  Rechercher parmi les invités..." oninput="renderPointage()">
         <div class="pointage-grid" id="pointage-grid"></div>
       </div>
@@ -901,6 +993,22 @@ td{padding:10px 12px;color:var(--text)}
       </div>
     </div>
 
+    <!-- PARKINGS ADMIN -->
+    <div class="page" id="page-parkings">
+      <div class="card card-accent">
+        <div class="card-header">
+          <div class="card-title">🅿️ Gestion des parkings</div>
+          <button class="btn btn-primary btn-sm" onclick="openModalNouveauParking()">＋ Nouveau parking</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nom</th><th>Capacité</th><th>Actif</th><th></th></tr></thead>
+            <tbody id="parkings-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- EXPORT -->
     <div class="page" id="page-export">
       <div class="card card-accent">
@@ -939,8 +1047,9 @@ const KEY_ = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const STORAGE_URL = `${URL_}/storage/v1/object/public/events-images/`;
 const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png';
 
-let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[];
+let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[];
 let currentPointeur = null; // objet pointeur complet
+let currentParkingId = null; // parking sélectionné par le pointeur
 let currentFilter = 'tous';
 const ADMIN_EMAIL = 'taoufik.smires@efiautomotive.com';
 const ADMIN_PWD = 'admin123';
@@ -1102,6 +1211,8 @@ function showApp() {
   // Afficher/masquer menu admin
   const adminItem = document.getElementById('admin-menu-item');
   if(adminItem) adminItem.style.display = currentPointeur?.role==='admin' ? 'flex' : 'none';
+  const parkItem = document.getElementById('parkings-menu-item');
+  if(parkItem) parkItem.style.display = currentPointeur?.role==='admin' ? 'flex' : 'none';
   loadAll().then(() => {
     setInterval(silentRefresh, 6000);
     document.addEventListener('keydown', onGlobalKey);
@@ -1291,16 +1402,17 @@ async function revoquerCompte(id) {
 async function loadAll() {
   showLoading('Chargement EFI Events...');
   try {
-    const [u,e,p,inv,pt] = await Promise.all([
+    const [u,e,p,inv,pt,pk] = await Promise.all([
       fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('invitations')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('pointeurs')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('parkings')+'?actif=eq.true&order=nom.asc',{headers:H()}).then(r=>r.json()),
     ]);
     users=Array.isArray(u)?u:[];events=Array.isArray(e)?e:[];
     presences=Array.isArray(p)?p:[];invitations=Array.isArray(inv)?inv:[];
-    pointeurs=Array.isArray(pt)?pt:[];
+    pointeurs=Array.isArray(pt)?pt:[];parkings=Array.isArray(pk)?pk:[];
     // Notifier si comptes en attente (admin seulement)
     if(currentPointeur?.role==='admin') {
       const pending = pointeurs.filter(p=>p.role==='en_attente').length;
@@ -1315,12 +1427,13 @@ async function loadAll() {
 
 async function silentRefresh() {
   try {
-    const [u,e,p,inv,pt] = await Promise.all([
+    const [u,e,p,inv,pt,pk] = await Promise.all([
       fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('invitations')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('pointeurs')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('parkings')+'?actif=eq.true&order=nom.asc',{headers:H()}).then(r=>r.json()),
     ]);
     const h=d=>JSON.stringify(d.map(x=>x.id+(x.present||'')));
     const changed=h(p)!==h(presences)||h(inv)!==h(invitations)||u.length!==users.length||e.length!==events.length||pt.length!==pointeurs.length;
@@ -1331,6 +1444,115 @@ async function silentRefresh() {
     const el=document.getElementById('sync-time');
     if(el){const n=new Date();el.textContent=n.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
   } catch{}
+}
+
+// ── PARKINGS ──────────────────────────────────────────────────
+function ouvrirModalParking() {
+  const choices = document.getElementById('parking-choices');
+  if(!choices) return;
+  choices.innerHTML = parkings.map(pk => {
+    const nb = getNbVoituresParking(pk.id);
+    const reste = pk.capacite - nb;
+    const pct = Math.round(nb / pk.capacite * 100);
+    const couleur = reste <= 5 ? 'var(--danger)' : reste <= 20 ? 'var(--accent2)' : 'var(--success)';
+    return `<button onclick="choisirParking('${pk.id}')" style="
+      width:100%;padding:14px 16px;border-radius:10px;
+      border:2px solid ${currentParkingId===pk.id?'var(--accent)':'var(--border)'};
+      background:${currentParkingId===pk.id?'rgba(232,37,26,.08)':'rgba(255,255,255,.03)'};
+      cursor:pointer;text-align:left;transition:all .2s">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:700;font-size:14px;color:var(--text)">🅿️ ${esc(pk.nom)}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${couleur}">${nb}/${pk.capacite}</div>
+      </div>
+      <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${couleur};border-radius:4px;transition:width .3s"></div>
+      </div>
+      <div style="font-size:11px;color:${couleur};margin-top:4px">${reste <= 0 ? '🔴 Complet' : reste <= 5 ? '🟠 '+reste+' place(s) restante(s)' : '🟢 '+reste+' places disponibles'}</div>
+    </button>`;
+  }).join('');
+  document.getElementById('modal-parking').classList.add('show');
+}
+
+function getNbVoituresParking(parkingId) {
+  if(!currentEventId) return 0;
+  return presences.filter(p => p.evenement_id===currentEventId && p.present && p.parking_id===parkingId).length
+    + (parkingInitCounts[parkingId] || 0);
+}
+
+// Stockage init voitures par parking (session)
+let parkingInitCounts = JSON.parse(sessionStorage.getItem('parkingInitCounts')||'{}');
+let pendingParkingId = null;
+
+async function choisirParking(parkingId) {
+  closeModal('modal-parking');
+  if(!parkingId) {
+    currentParkingId = null;
+    updateParkingBar();
+    return;
+  }
+  // Vérifier si premier pointeur sur ce parking pour cet événement
+  const dejaBadges = presences.filter(p => p.evenement_id===currentEventId && p.parking_id===parkingId).length;
+  const initFait = parkingInitCounts[parkingId] !== undefined;
+  if(dejaBadges === 0 && !initFait) {
+    // Premier — demander voitures déjà présentes
+    pendingParkingId = parkingId;
+    const pk = parkings.find(p=>p.id===parkingId);
+    document.getElementById('init-parking-nom').textContent = pk ? '🅿️ '+pk.nom : 'Parking';
+    document.getElementById('init-voitures-nb').value = '0';
+    document.getElementById('modal-init-voitures').classList.add('show');
+  } else {
+    currentParkingId = parkingId;
+    updateParkingBar();
+  }
+}
+
+function confirmerInitVoitures() {
+  const nb = parseInt(document.getElementById('init-voitures-nb').value) || 0;
+  parkingInitCounts[pendingParkingId] = nb;
+  sessionStorage.setItem('parkingInitCounts', JSON.stringify(parkingInitCounts));
+  currentParkingId = pendingParkingId;
+  pendingParkingId = null;
+  closeModal('modal-init-voitures');
+  updateParkingBar();
+  toast(`🅿️ Parking initialisé avec ${nb} voiture(s)`, 'info');
+}
+
+function confirmerInitVoitures0() {
+  document.getElementById('init-voitures-nb').value = '0';
+  confirmerInitVoitures();
+}
+
+function updateParkingBar() {
+  const bar = document.getElementById('parking-bar');
+  if(!bar) return;
+  if(!currentParkingId) { bar.style.display='none'; return; }
+  const pk = parkings.find(p=>p.id===currentParkingId);
+  if(!pk) { bar.style.display='none'; return; }
+  bar.style.display = 'block';
+  const nb = getNbVoituresParking(currentParkingId);
+  const reste = pk.capacite - nb;
+  const pct = Math.min(100, Math.round(nb/pk.capacite*100));
+  const couleur = reste <= 5 ? 'var(--danger)' : reste <= 20 ? 'var(--accent2)' : 'var(--success)';
+  document.getElementById('parking-bar-nom').textContent = pk.nom;
+  document.getElementById('parking-bar-places').textContent = `${nb}/${pk.capacite} — ${reste} place(s) disponible(s)`;
+  document.getElementById('parking-bar-fill').style.width = pct+'%';
+  document.getElementById('parking-bar-fill').style.background = couleur;
+}
+
+function verifierAlertParking() {
+  if(!currentParkingId) return;
+  const pk = parkings.find(p=>p.id===currentParkingId);
+  if(!pk) return;
+  const nb = getNbVoituresParking(currentParkingId);
+  const reste = pk.capacite - nb;
+  if(reste <= 0) {
+    showScanPopup('🅿️', 'error', pk.nom + ' — COMPLET !', 'Plus aucune place disponible');
+    playSound('error');
+  } else if(reste <= 5) {
+    toast(`⚠️ ${pk.nom} — Plus que ${reste} place(s) !`, 'warn');
+    playSound('error');
+  }
+  updateParkingBar();
 }
 
 function refreshAll(){renderDashboard();renderEvents();renderUsers();populateExportSel();if(currentEventId)renderPointage();}
@@ -1354,10 +1576,11 @@ function navigateTo(name, pushState=true) {
   // Sync bottom nav
   const navItems = document.querySelectorAll('.mobile-nav-item');
   if(idx>=0 && navItems[idx]) navItems[idx].classList.add('active');
-  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte',historique:'Historique'};
+  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte',historique:'Historique',parkings:'Parkings'};
   document.getElementById('top-title').innerHTML=`<span>${titles[name]||name}</span>`;
   if(name==='moncompte') renderMonCompte();
   if(name==='historique') loadHistorique();
+  if(name==='parkings') renderParkings();
   if(name==='evenements'||name==='dashboard') { renderEvents(); renderDashboard(); }
   // Pousser dans l'historique
   if(pushState) history.pushState({page: name}, '', '#'+name);
@@ -1502,8 +1725,11 @@ function selectEvent(id){
   const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
   if(mobileNavItems[2]) mobileNavItems[2].classList.add('active');
   document.getElementById('top-title').innerHTML=`🎯 <span>${ev?esc(ev.nom):'Pointage'}</span>`;
-  // Montrer le modal NFC à la première visite
-  setTimeout(showNFCModal, 400);
+  // Montrer d'abord le modal parking, puis NFC
+  setTimeout(() => {
+    if(parkings.length > 0) { ouvrirModalParking(); }
+    else { setTimeout(showNFCModal, 400); }
+  }, 400);
 }
 
 function getInvitedUsers(){
@@ -1584,7 +1810,7 @@ async function doTogglePresence(userId,current,presenceId,raison){
   const pointePar=currentPointeur?currentPointeur.display:null;
   try {
     if(presenceId&&presenceId!=='null'&&presenceId!==''){
-      const body={present:!current,horraire_arrivee:heure||null};
+      const body={present:!current,horraire_arrivee:heure||null,parking_id:(!current&&currentParkingId)?currentParkingId:null};
       if(!current&&pointePar) body.pointe_par=pointePar;
       if(current) body.pointe_par=null;
       const res=await fetch(api('presences')+`?id=eq.${presenceId}`,{method:'PATCH',headers:H(),body:JSON.stringify(body)});
@@ -1608,6 +1834,7 @@ async function doTogglePresence(userId,current,presenceId,raison){
       !current ? `Arrivée à ${heure}` : `Raison : ${raison||'Non précisée'}`
     );
     updatePointageStats();renderPointage();renderDashboard();renderEvents();
+    if(!current) verifierAlertParking();
     toast(!current?'✅ Présent à '+heure:'↩ Présence annulée',!current?'success':'info');
   } catch(e){toast('Erreur : '+e.message,'error');}
 }
@@ -1785,13 +2012,14 @@ async function doScan(){
       const idx=presences.findIndex(p=>p.id===existing.id);
       if(idx>=0){presences[idx].present=true;presences[idx].horraire_arrivee=heure+':00';}
     } else {
-      const res=await fetch(api('presences'),{method:'POST',headers:H(),body:JSON.stringify({user_id:user.id,evenement_id:currentEventId,present:true,horraire_arrivee:heure,pointe_par:currentPointeur?currentPointeur.display:null})});
+      const res=await fetch(api('presences'),{method:'POST',headers:H(),body:JSON.stringify({user_id:user.id,evenement_id:currentEventId,present:true,horraire_arrivee:heure,pointe_par:currentPointeur?currentPointeur.display:null,parking_id:currentParkingId||null})});
       if(!res.ok) throw new Error();
       const np=await res.json();presences.push(Array.isArray(np)?np[0]:np);
     }
     const evNfc = events.find(e=>e.id===currentEventId);
     await logHistorique('PRÉSENCE (NFC)', currentPointeur?.display||'—', user.nom+' '+user.prenom, evNfc?evNfc.nom:'—', `Badge scanné à ${heure}`);
     updatePointageStats();renderPointage();renderDashboard();renderEvents();
+    verifierAlertParking();
     resultEl.className='scan-result ok';resultEl.textContent=`✅ ${user.nom} ${user.prenom} — présent à ${heure}`;
     zone.className='scan-zone flash';setTimeout(()=>{zone.className='scan-zone';resultEl.textContent='';},3000);
     showScanPopup(numCarte,'success',user.nom+' '+user.prenom,'Présence enregistrée à '+heure);
@@ -2380,6 +2608,72 @@ function renderHistorique() {
       <td style="font-size:11px;color:var(--muted);max-width:180px;white-space:normal">${esc(h.details||'—')}</td>
     </tr>`;
   }).join('');
+}
+
+function renderParkings() {
+  const tbody = document.getElementById('parkings-body');
+  if(!tbody) return;
+  if(!parkings.length){ tbody.innerHTML='<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">🅿️</div><div>Aucun parking.</div></div></td></tr>'; return; }
+  tbody.innerHTML = parkings.map(pk => `<tr>
+    <td><strong>${esc(pk.nom)}</strong></td>
+    <td class="mono">${pk.capacite} places</td>
+    <td><span class="badge ${pk.actif?'badge-present':'badge-absent'}">${pk.actif?'✅ Actif':'❌ Inactif'}</span></td>
+    <td>
+      <button class="icon-btn edit" onclick="editParking('${pk.id}')">✏</button>
+      <button class="icon-btn del" onclick="deleteParking('${pk.id}')">✕</button>
+    </td>
+  </tr>`).join('');
+}
+
+function openModalNouveauParking() {
+  document.getElementById('np-id').value='';
+  document.getElementById('np-nom').value='';
+  document.getElementById('np-capacite').value='100';
+  document.getElementById('np-actif').value='true';
+  document.getElementById('np-title').textContent='Nouveau parking';
+  document.getElementById('modal-nouveau-parking').classList.add('show');
+}
+
+function editParking(id) {
+  const pk = parkings.find(p=>p.id===id); if(!pk) return;
+  document.getElementById('np-id').value=pk.id;
+  document.getElementById('np-nom').value=pk.nom;
+  document.getElementById('np-capacite').value=pk.capacite;
+  document.getElementById('np-actif').value=String(pk.actif);
+  document.getElementById('np-title').textContent='Modifier le parking';
+  document.getElementById('modal-nouveau-parking').classList.add('show');
+}
+
+async function saveParking() {
+  const nom = document.getElementById('np-nom').value.trim();
+  const capacite = parseInt(document.getElementById('np-capacite').value);
+  if(!nom||!capacite){ toast('Nom et capacité obligatoires.','error'); return; }
+  const id = document.getElementById('np-id').value;
+  const payload = {nom, capacite, actif: document.getElementById('np-actif').value==='true'};
+  showLoading('Enregistrement...');
+  try {
+    if(id){
+      const res=await fetch(api('parkings')+`?id=eq.${id}`,{method:'PATCH',headers:H(),body:JSON.stringify(payload)});
+      if(!res.ok) throw new Error((await res.json()).message);
+      const idx=parkings.findIndex(p=>p.id===id); if(idx>=0) parkings[idx]={...parkings[idx],...payload};
+    } else {
+      const res=await fetch(api('parkings'),{method:'POST',headers:H(),body:JSON.stringify(payload)});
+      if(!res.ok) throw new Error((await res.json()).message);
+      const np2=await res.json(); parkings.push(Array.isArray(np2)?np2[0]:np2);
+    }
+    closeModal('modal-nouveau-parking'); renderParkings();
+    toast('✅ Parking enregistré !','success');
+  } catch(e){ toast('Erreur : '+e.message,'error'); }
+  finally{ hideLoading(); }
+}
+
+async function deleteParking(id) {
+  if(!confirm('Supprimer ce parking ?')) return;
+  try {
+    await fetch(api('parkings')+`?id=eq.${id}`,{method:'DELETE',headers:H()});
+    parkings=parkings.filter(p=>p.id!==id); renderParkings();
+    toast('🗑 Parking supprimé.','info');
+  } catch(e){ toast('Erreur : '+e.message,'error'); }
 }
 
 function dl(href,filename){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
