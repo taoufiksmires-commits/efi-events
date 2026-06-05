@@ -584,39 +584,6 @@ td{padding:10px 12px;color:var(--text)}
 </div>
 
 <div id="loading-overlay"><div class="loading-box"><div class="spinner"></div><div id="loading-text">Chargement...</div></div></div>
-<!-- DRAWER MODE POINTAGE -->
-<div id="mode-drawer-overlay" onclick="fermerModeDrawer()" style="display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.5)"></div>
-<div id="mode-drawer" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:160;background:var(--surface);border-top:2px solid var(--accent);border-radius:16px 16px 0 0;padding:20px 16px 32px">
-  <div style="text-align:center;margin-bottom:20px">
-    <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px"></div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--text)">Mode de pointage</div>
-  </div>
-  <div style="display:flex;flex-direction:column;gap:12px">
-    <button onclick="choisirMode('entree')" id="mode-btn-entree" style="
-      display:flex;align-items:center;gap:16px;padding:18px;
-      border-radius:12px;border:2px solid var(--accent);
-      background:rgba(232,37,26,.08);cursor:pointer;width:100%;text-align:left">
-      <span style="font-size:32px">🚪</span>
-      <div>
-        <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:3px">Entrée</div>
-        <div style="font-size:12px;color:var(--muted)">Enregistrer les arrivées + parking</div>
-      </div>
-      <span id="mode-check-entree" style="margin-left:auto;color:var(--accent);font-size:20px">✓</span>
-    </button>
-    <button onclick="choisirMode('repas')" id="mode-btn-repas" style="
-      display:flex;align-items:center;gap:16px;padding:18px;
-      border-radius:12px;border:2px solid var(--border);
-      background:rgba(255,255,255,.03);cursor:pointer;width:100%;text-align:left">
-      <span style="font-size:32px">🍽️</span>
-      <div>
-        <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:3px">Repas</div>
-        <div style="font-size:12px;color:var(--muted)">Valider les repas des présents</div>
-      </div>
-      <span id="mode-check-repas" style="margin-left:auto;color:var(--success);font-size:20px;display:none">✓</span>
-    </button>
-  </div>
-</div>
-
 <!-- DRAWER ADMIN MOBILE -->
 <div id="admin-drawer-overlay" onclick="closeMobileAdminMenu()" style="display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.5)"></div>
 <div id="admin-drawer" style="display:none;position:fixed;bottom:60px;left:0;right:0;z-index:160;background:var(--surface);border-top:2px solid var(--accent);border-radius:16px 16px 0 0;padding:16px 16px 8px">
@@ -792,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.46
+        v1.8.47
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -926,22 +893,7 @@ td{padding:10px 12px;color:var(--text)}
           </div>
         </div>
 
-        <!-- Bouton flottant mode -->
-        <div id="mode-fab" style="display:none;justify-content:center;margin-bottom:14px">
-          <button onclick="ouvrirModeDrawer()" style="
-            display:flex;align-items:center;gap:10px;padding:12px 24px;
-            border-radius:30px;border:2px solid var(--accent);
-            background:rgba(232,37,26,.1);color:var(--accent);
-            font-weight:700;font-size:13px;cursor:pointer;
-            box-shadow:0 4px 16px rgba(232,37,26,.2);transition:all .2s"
-            onmouseover="this.style.background='rgba(232,37,26,.2)'"
-            onmouseout="this.style.background='rgba(232,37,26,.1)'">
-            <span id="mode-fab-icon">🚪</span>
-            <span id="mode-fab-label">Mode Entrée — Changer</span>
-          </button>
-        </div>
-
-        <input class="search-big" type="text" id="pointage-search" placeholder="🔍  Rechercher parmi les invités..." oninput="modePointage==='repas'?renderRepas():renderPointage()">
+        <input class="search-big" type="text" id="pointage-search" placeholder="🔍  Rechercher parmi les invités..." oninput="renderPointage()">
         <div class="pointage-grid" id="pointage-grid"></div>
       </div>
     </div>
@@ -1896,7 +1848,6 @@ function selectEvent(id){
   const ev=events.find(e=>e.id===id);
   document.getElementById('pointage-no-event').style.display='none';
   document.getElementById('pointage-content').style.display='block';
-  const fab=document.getElementById('mode-fab'); if(fab) fab.style.display='flex';
   // Header pointage
   const imgEl=document.getElementById('pointage-event-img');
   const placEl=document.getElementById('pointage-event-img-placeholder');
@@ -2895,100 +2846,6 @@ function toggleMobileAdminMenu() {
 function closeMobileAdminMenu() {
   document.getElementById('admin-drawer').style.display = 'none';
   document.getElementById('admin-drawer-overlay').style.display = 'none';
-}
-
-function ouvrirModeDrawer() {
-  // Mettre à jour visuellement le bouton actif
-  const isEntree = modePointage === 'entree';
-  const btnE = document.getElementById('mode-btn-entree');
-  const btnR = document.getElementById('mode-btn-repas');
-  const chkE = document.getElementById('mode-check-entree');
-  const chkR = document.getElementById('mode-check-repas');
-  if(btnE) { btnE.style.borderColor = isEntree?'var(--accent)':'var(--border)'; btnE.style.background = isEntree?'rgba(232,37,26,.08)':'rgba(255,255,255,.03)'; }
-  if(btnR) { btnR.style.borderColor = !isEntree?'var(--success)':'var(--border)'; btnR.style.background = !isEntree?'rgba(45,212,160,.08)':'rgba(255,255,255,.03)'; }
-  if(chkE) chkE.style.display = isEntree?'block':'none';
-  if(chkR) chkR.style.display = !isEntree?'block':'none';
-  document.getElementById('mode-drawer').style.display = 'block';
-  document.getElementById('mode-drawer-overlay').style.display = 'block';
-}
-
-function fermerModeDrawer() {
-  document.getElementById('mode-drawer').style.display = 'none';
-  document.getElementById('mode-drawer-overlay').style.display = 'none';
-}
-
-function choisirMode(mode) {
-  fermerModeDrawer();
-  modePointage = mode;
-  // Mettre à jour le bouton FAB
-  const icon = document.getElementById('mode-fab-icon');
-  const label = document.getElementById('mode-fab-label');
-  const fab = document.getElementById('mode-fab');
-  if(icon) icon.textContent = mode==='repas' ? '🍽️' : '🚪';
-  if(label) label.textContent = mode==='repas' ? 'Mode Repas — Changer' : 'Mode Entrée — Changer';
-  if(fab) {
-    fab.style.display = 'flex';
-    if(mode==='repas') {
-      fab.querySelector('button').style.borderColor = 'var(--success)';
-      fab.querySelector('button').style.background = 'rgba(45,212,160,.1)';
-      fab.querySelector('button').style.color = 'var(--success)';
-    } else {
-      fab.querySelector('button').style.borderColor = 'var(--accent)';
-      fab.querySelector('button').style.background = 'rgba(232,37,26,.1)';
-      fab.querySelector('button').style.color = 'var(--accent)';
-    }
-  }
-  // Changer placeholder
-  const search = document.getElementById('pointage-search');
-  if(search) search.placeholder = mode==='repas' ? '🍽️ Rechercher un invité présent...' : '🔍 Rechercher parmi les invités...';
-  // Gérer parking bar
-  const parkingBar = document.getElementById('parking-bar');
-  if(mode==='repas') {
-    if(parkingBar) parkingBar.style.display='none';
-    // En mode repas : montrer les présents avec repas
-    renderRepas();
-  } else {
-    updateParkingBar();
-    renderPointage();
-  }
-}
-
-function renderRepas() {
-  if(!currentEventId) return;
-  const q = document.getElementById('pointage-search').value.toLowerCase().trim();
-  // Présents seulement
-  const invites = invitations.filter(i=>i.evenement_id===currentEventId).map(function(inv){
-    const u = users.find(function(u){ return u.id===inv.user_id; });
-    const p = presences.find(function(p){ return p.evenement_id===currentEventId && p.user_id===inv.user_id; });
-    const r = repas.find(function(r){ return r.evenement_id===currentEventId && r.user_id===inv.user_id; });
-    if(!u || !p || !p.present) return null;
-    return {id:u.id, nom:u.nom, prenom:u.prenom, departement:u.departement, matricule:u.matricule, a_mange:!!r};
-  }).filter(Boolean);
-  const filtered = q ? invites.filter(function(r){ return (r.nom+' '+r.prenom).toLowerCase().indexOf(q)>=0; }) : invites;
-  const nbMange = repas.filter(function(r){ return r.evenement_id===currentEventId; }).length;
-  const grid = document.getElementById('pointage-grid');
-  if(!filtered.length){
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🍽️</div><div>Aucun invité présent pour le repas.</div></div>';
-    return;
-  }
-  var html = '<div style="grid-column:1/-1;background:rgba(45,212,160,.06);border:1px solid rgba(45,212,160,.2);border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
-  html += '<span style="font-size:13px;font-weight:600">🍽️ Repas distribués</span>';
-  html += '<span style="font-family:Bebas Neue,sans-serif;font-size:24px;color:var(--success)">'+nbMange+' / '+filtered.length+'</span></div>';
-  filtered.forEach(function(r){
-    var meta = [r.departement,r.matricule].filter(Boolean).map(esc).join(' · ') || '—';
-    html += '<div class="pointage-card '+(r.a_mange?'is-present':'')+'">';
-    html += '<div><div class="p-name">'+esc(r.nom)+' '+esc(r.prenom)+'</div>';
-    html += '<div class="p-meta">'+meta+'</div>';
-    if(r.a_mange) html += '<div class="p-arrive">🍽️ Repas pris</div>';
-    html += '</div>';
-    if(r.a_mange){
-      html += '<span class="badge badge-present">✅ Servi</span>';
-    } else {
-      html += '<button class="btn-toggle absent" onclick="enregistrerRepas(''+r.id+'')">🍽️ Servir</button>';
-    }
-    html += '</div>';
-  });
-  grid.innerHTML = html;
 }
 
 function dl(href,filename){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
