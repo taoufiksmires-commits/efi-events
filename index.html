@@ -646,7 +646,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.18
+        v1.8.19
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1336,6 +1336,39 @@ async function silentRefresh() {
 }
 
 function refreshAll(){renderDashboard();renderEvents();renderUsers();populateExportSel();if(currentEventId)renderPointage();}
+
+// EVENT PICKER
+async function renderEventPicker() {
+  const loading = document.getElementById('pointage-event-picker-loading');
+  const picker = document.getElementById('pointage-event-picker');
+  if(!loading || !picker) return;
+  if(events.length === 0 && users.length === 0) {
+    loading.style.display = 'block';
+    picker.style.display = 'none';
+    await loadAll();
+  }
+  loading.style.display = 'none';
+  picker.style.display = 'flex';
+  if(events.length === 1) { selectEvent(events[0].id); return; }
+  if(events.length === 0) {
+    picker.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div>Aucun événement disponible.</div></div>';
+    return;
+  }
+  picker.innerHTML = events.map(ev => {
+    const evInv = invitations.filter(i=>i.evenement_id===ev.id).length;
+    const evPres = presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
+    const img = ev.image_url
+      ? '<img src="'+ev.image_url+'" style="width:52px;height:52px;object-fit:contain;border-radius:8px;background:#fff;flex-shrink:0" onerror="this.style.display='none'">'
+      : '<div style="width:52px;height:52px;border-radius:8px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📅</div>';
+    return '<div onclick="selectEvent(''+ev.id+'')" style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">'
+      + img
+      + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;margin-bottom:3px">'+esc(ev.nom)+'</div>'
+      + '<div style="font-size:11px;color:var(--muted)">'+(ev.date?fmtDate(ev.date):'')+(ev.lieu?' · '+esc(ev.lieu):'')+'</div></div>'
+      + '<div style="text-align:right;flex-shrink:0"><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent)">'+evPres+'</div>'
+      + '<div style="font-size:10px;color:var(--muted)">/ '+evInv+'</div></div>'
+      + '<div style="font-size:20px;color:var(--accent)">›</div></div>';
+  }).join('');
+}
 
 // NAV
 function goPage(name, el) {
