@@ -749,7 +749,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.36
+        v1.8.37
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1471,7 +1471,7 @@ async function silentRefresh() {
     users=Array.isArray(u)?u:[];events=Array.isArray(e)?e:[];
     presences=Array.isArray(p)?p:[];invitations=Array.isArray(inv)?inv:[];
     pointeurs=Array.isArray(pt)?pt:[];
-    if(changed) refreshAll();
+    if(changed) { refreshAll(); updateParkingBar(); }
     const el=document.getElementById('sync-time');
     if(el){const n=new Date();el.textContent=n.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
   } catch{}
@@ -1560,6 +1560,18 @@ async function confirmerInitVoitures() {
 function confirmerInitVoitures0() {
   document.getElementById('init-voitures-nb').value = '0';
   confirmerInitVoitures();
+}
+
+async function refreshParkingData() {
+  try {
+    const [p, ps] = await Promise.all([
+      fetch(api('presences')+'?order=created_at.desc', {headers:H()}).then(r=>r.json()),
+      fetch(api('parking_sessions')+'?order=created_at.desc', {headers:H()}).then(r=>r.json()),
+    ]);
+    if(Array.isArray(p)) presences = p;
+    if(Array.isArray(ps)) parkingSessions = ps;
+    updateParkingBar();
+  } catch(e) { /* silencieux */ }
 }
 
 function updateParkingBar() {
@@ -1876,7 +1888,7 @@ async function doTogglePresence(userId,current,presenceId,raison){
       !current ? `Arrivée à ${heure} — ${lieuStr}` : `Raison : ${raison||'Non précisée'}`
     );
     updatePointageStats();renderPointage();renderDashboard();renderEvents();
-    if(!current) verifierAlertParking();
+    if(!current) { await refreshParkingData(); verifierAlertParking(); }
     toast(!current?'✅ Présent à '+heure:'↩ Présence annulée',!current?'success':'info');
   } catch(e){toast('Erreur : '+e.message,'error');}
 }
@@ -2063,7 +2075,7 @@ async function doScan(){
     const lieuNfc = pkNfc ? `Parking : ${pkNfc.nom}` : 'Entrée principale';
     await logHistorique('PRÉSENCE (NFC)', currentPointeur?.display||'—', user.nom+' '+user.prenom, evNfc?evNfc.nom:'—', `Badge scanné à ${heure} — ${lieuNfc}`);
     updatePointageStats();renderPointage();renderDashboard();renderEvents();
-    verifierAlertParking();
+    await refreshParkingData(); verifierAlertParking();
     resultEl.className='scan-result ok';resultEl.textContent=`✅ ${user.nom} ${user.prenom} — présent à ${heure}`;
     zone.className='scan-zone flash';setTimeout(()=>{zone.className='scan-zone';resultEl.textContent='';},3000);
     showScanPopup(numCarte,'success',user.nom+' '+user.prenom,'Présence enregistrée à '+heure);
