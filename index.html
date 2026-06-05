@@ -1414,8 +1414,26 @@ async function togglePresence(userId,current,presenceId){
 function onGlobalKey(e){
   const tag=document.activeElement.tagName;
   if((tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')&&document.activeElement.id!=='scan-input') return;
-  if(e.key==='Enter'){if(scanBuffer.length>3){document.getElementById('scan-input').value=scanBuffer;doScan();}scanBuffer='';clearTimeout(scanTimer2);return;}
-  if(e.key.length===1){scanBuffer+=e.key;clearTimeout(scanTimer2);scanTimer2=setTimeout(()=>{if(scanBuffer.length>3){document.getElementById('scan-input').value=scanBuffer;doScan();}scanBuffer='';},200);}
+  if(e.key==='Enter'){
+    if(scanBuffer.length>0){
+      console.log('📡 NFC reçu (Enter):', JSON.stringify(scanBuffer));
+      document.getElementById('scan-input').value=scanBuffer;
+      doScan();
+    }
+    scanBuffer='';clearTimeout(scanTimer2);return;
+  }
+  if(e.key.length===1){
+    scanBuffer+=e.key;
+    clearTimeout(scanTimer2);
+    scanTimer2=setTimeout(()=>{
+      if(scanBuffer.length>0){
+        console.log('📡 NFC reçu (timeout):', JSON.stringify(scanBuffer), 'longueur:', scanBuffer.length);
+        document.getElementById('scan-input').value=scanBuffer;
+        doScan();
+      }
+      scanBuffer='';
+    },300);
+  }
 }
 
 async function doScan(){
