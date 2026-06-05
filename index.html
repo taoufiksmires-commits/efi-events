@@ -161,6 +161,17 @@ td{padding:10px 12px;color:var(--text)}
 .loading-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 40px;text-align:center;color:var(--muted);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px}
 .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes btnPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(232,37,26,.4);transform:scale(1)}
+  50%{box-shadow:0 0 0 10px rgba(232,37,26,0);transform:scale(1.04)}
+}
+@keyframes nfcRing{
+  0%{transform:translate(-50%,-50%) scale(1);opacity:.6}
+  100%{transform:translate(-50%,-50%) scale(2.2);opacity:0}
+}
+.btn-pulse{animation:btnPulse 1.8s ease infinite}
+.nfc-btn-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.nfc-ring{position:absolute;top:50%;left:50%;width:100%;height:100%;border-radius:50%;border:2px solid var(--success);animation:nfcRing 1.5s ease-out infinite;pointer-events:none}
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
 .empty-icon{font-size:36px;margin-bottom:8px;opacity:.4}
 /* ── POPUP SCAN ─────────────────────────────────────────── */
@@ -578,7 +589,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.9
+        v1.8.10
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -632,21 +643,46 @@ td{padding:10px 12px;color:var(--text)}
           <div class="stat-card"><div class="stat-label">Absents</div><div class="stat-value orange" id="p-absent">—</div></div>
           <div class="stat-card"><div class="stat-label">Taux</div><div class="stat-value" id="p-taux">—</div></div>
         </div>
-        <div class="scan-zone" id="scan-zone">
-          <span style="font-size:24px">📡</span>
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
-              <div style="font-weight:600;font-size:13px">Scanner un badge EFI</div>
-              <span id="nfc-status" style="font-size:11px;color:var(--muted)">⏳ En attente</span>
-              <button id="nfc-btn" onclick="startNFC()" class="btn btn-success btn-sm" style="padding:5px 12px;font-size:11px">
-                📡 Activer NFC
-              </button>
+        <div class="scan-zone" id="scan-zone" style="flex-direction:column;align-items:center;padding:20px 16px;text-align:center">
+
+          <!-- État : en attente activation -->
+          <div id="nfc-inactive" style="display:flex;flex-direction:column;align-items:center;gap:16px">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Appuyez pour activer le scanner de badges</div>
+            <div class="nfc-btn-wrap">
+              <div class="nfc-ring" style="display:none" id="nfc-ring"></div>
+              <button id="nfc-btn" onclick="startNFC()" style="
+                width:100px;height:100px;border-radius:50%;
+                background:linear-gradient(135deg,rgba(45,212,160,.15),rgba(45,212,160,.3));
+                border:2px solid var(--success);color:var(--success);
+                font-size:36px;cursor:pointer;transition:all .2s;
+                display:flex;align-items:center;justify-content:center;
+                box-shadow:0 0 20px rgba(45,212,160,.2)
+              ">📡</button>
             </div>
-            <div class="scan-result" id="scan-result"></div>
+            <span id="nfc-status" style="font-size:12px;color:var(--muted)">⏳ NFC inactif</span>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="scan-input" type="text" placeholder="N° carte..." style="width:180px;margin:0" autocomplete="off" onkeydown="if(event.key==='Enter')doScan()">
-            <button class="btn btn-primary btn-sm" onclick="doScan()">Valider</button>
+
+          <!-- État : NFC actif -->
+          <div id="nfc-active" style="display:none;flex-direction:column;align-items:center;gap:12px;width:100%">
+            <div class="nfc-btn-wrap">
+              <div class="nfc-ring" id="nfc-ring-active"></div>
+              <div style="
+                width:80px;height:80px;border-radius:50%;
+                background:linear-gradient(135deg,rgba(45,212,160,.2),rgba(45,212,160,.4));
+                border:2px solid var(--success);color:var(--success);
+                font-size:30px;display:flex;align-items:center;justify-content:center;
+                box-shadow:0 0 24px rgba(45,212,160,.3)
+              ">📡</div>
+            </div>
+            <div style="font-weight:700;font-size:14px;color:var(--success)">Scanner prêt</div>
+            <div style="font-size:12px;color:var(--muted)">Approchez votre badge</div>
+            <div class="scan-result" id="scan-result" style="font-size:13px;min-height:18px"></div>
+          </div>
+
+          <!-- Saisie manuelle (toujours visible) -->
+          <div style="display:flex;gap:8px;align-items:center;margin-top:14px;width:100%;max-width:320px">
+            <input id="scan-input" type="text" placeholder="Ou saisir N° carte manuellement..." style="flex:1;margin:0;font-size:12px" autocomplete="off" onkeydown="if(event.key==='Enter')doScan()">
+            <button class="btn btn-primary btn-sm" onclick="doScan()">→</button>
           </div>
         </div>
         <input class="search-big" type="text" id="pointage-search" placeholder="🔍  Rechercher parmi les invités..." oninput="renderPointage()">
@@ -1232,7 +1268,7 @@ function renderDashboard(){
     const evPres=presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
     return`<tr>
       <td><strong>${esc(ev.nom)}</strong></td>
-      <td><button class="btn btn-primary btn-sm" onclick="selectEvent('${ev.id}')">🎯 Pointer</button></td>
+      <td><button class="btn btn-primary btn-sm btn-pulse" onclick="selectEvent('${ev.id}')">🎯 Pointer</button></td>
       <td class="mono">${ev.date?fmtDate(ev.date):'—'}</td>
       <td><span class="badge badge-present">${evPres}/${evInv}</span></td>
     </tr>`;
@@ -1262,7 +1298,7 @@ function renderEvents(){
           ${ev.description?`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">📝 ${esc(ev.description)}</span>`:''}
         </div>
         <div class="event-actions">
-          <button class="btn btn-primary btn-sm" onclick="selectEvent('${ev.id}')">🎯 Pointer</button>
+          <button class="btn btn-primary btn-sm btn-pulse" onclick="selectEvent('${ev.id}')">🎯 Pointer</button>
           <button class="btn btn-ghost btn-sm" onclick="openInviteModal('${ev.id}')">👥 (${evInv})</button>
           ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openEventModal('${ev.id}')">✏️ Modifier</button>`:''}
           ${isAdmin()?`<button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">🗑</button>`:''}
@@ -1425,7 +1461,9 @@ async function togglePresence(userId,current,presenceId){
 // ── WEB NFC API ──────────────────────────────────────────────
 async function startNFC() {
   const btn = document.getElementById('nfc-btn');
-  if(btn) { btn.textContent='⏳ Activation...'; btn.disabled=true; }
+  const ring = document.getElementById('nfc-ring');
+  if(btn) { btn.textContent='⏳'; btn.disabled=true; }
+  if(ring) ring.style.display='block';
   await initNFC();
 }
 
@@ -1489,23 +1527,27 @@ async function initNFC() {
 }
 
 function updateNFCStatus(status) {
-  const el = document.getElementById('nfc-status');
+  const inactive = document.getElementById('nfc-inactive');
+  const active = document.getElementById('nfc-active');
+  const statusEl = document.getElementById('nfc-status');
   const btn = document.getElementById('nfc-btn');
-  if(!el) return;
-  const configs = {
-    active:       { text:'📡 NFC actif', color:'var(--success)' },
-    unsupported:  { text:'⌨️ Mode clavier', color:'var(--muted)' },
-    denied:       { text:'⚠️ Autorisation refusée', color:'var(--accent2)' },
-    error:        { text:'⚠️ Erreur NFC', color:'var(--accent2)' },
-  };
-  const cfg = configs[status] || configs.error;
-  el.textContent = cfg.text;
-  el.style.color = cfg.color;
-  // Remettre le bouton si erreur ou refus
-  if(btn && status !== 'active') {
-    btn.style.display = '';
-    btn.textContent = status==='denied' ? '🔓 Réessayer' : '📡 Activer NFC';
-    btn.disabled = false;
+  const ring = document.getElementById('nfc-ring');
+
+  if(status === 'active') {
+    if(inactive) inactive.style.display = 'none';
+    if(active) active.style.display = 'flex';
+  } else {
+    if(inactive) inactive.style.display = 'flex';
+    if(active) active.style.display = 'none';
+    if(ring) ring.style.display = 'none';
+    if(btn) { btn.disabled = false; btn.textContent = '📡'; }
+    const msgs = {
+      unsupported: { text:'⌨️ Mode clavier actif', color:'var(--muted)' },
+      denied:      { text:'⚠️ Autorisation refusée — Réessayer', color:'var(--accent2)' },
+      error:       { text:'⚠️ Erreur — Réessayer', color:'var(--accent2)' },
+    };
+    const cfg = msgs[status] || msgs.error;
+    if(statusEl) { statusEl.textContent = cfg.text; statusEl.style.color = cfg.color; }
   }
 }
 
