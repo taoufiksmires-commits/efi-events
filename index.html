@@ -426,6 +426,62 @@ td{padding:10px 12px;color:var(--text)}
   </div>
 </div>
 
+<!-- MODAL RAISON SUPPRESSION -->
+<div class="modal-overlay" id="modal-raison">
+  <div class="modal" style="width:420px">
+    <button class="modal-close" onclick="closeModal('modal-raison')">✕</button>
+    <div class="modal-title">❌ Supprimer la présence</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Veuillez indiquer la raison de cette suppression. Elle sera enregistrée dans l'historique.</p>
+    <input type="hidden" id="raison-user-id">
+    <input type="hidden" id="raison-present">
+    <input type="hidden" id="raison-presence-id">
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Raison *</label>
+      <select id="raison-select" onchange="toggleRaisonAutre(this.value)" style="margin-bottom:8px">
+        <option value="">-- Sélectionner --</option>
+        <option value="Erreur de pointage">Erreur de pointage</option>
+        <option value="Départ anticipé">Départ anticipé</option>
+        <option value="Absence justifiée">Absence justifiée</option>
+        <option value="Badge scanné par erreur">Badge scanné par erreur</option>
+        <option value="Autre">Autre (préciser)</option>
+      </select>
+      <textarea id="raison-autre" placeholder="Précisez la raison..." style="display:none;min-height:70px"></textarea>
+    </div>
+    <div class="btn-actions">
+      <button class="btn btn-danger" onclick="confirmerSuppression()">Confirmer la suppression</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-raison')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RAISON SUPPRESSION -->
+<div class="modal-overlay" id="modal-raison">
+  <div class="modal" style="width:420px">
+    <button class="modal-close" onclick="closeModal('modal-raison')">✕</button>
+    <div class="modal-title">❌ Supprimer la présence</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Veuillez indiquer la raison de cette suppression. Elle sera enregistrée dans l'historique.</p>
+    <input type="hidden" id="raison-user-id">
+    <input type="hidden" id="raison-present">
+    <input type="hidden" id="raison-presence-id">
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Raison *</label>
+      <select id="raison-select" onchange="toggleRaisonAutre(this.value)" style="margin-bottom:8px">
+        <option value="">-- Sélectionner --</option>
+        <option value="Erreur de pointage">Erreur de pointage</option>
+        <option value="Départ anticipé">Départ anticipé</option>
+        <option value="Absence justifiée">Absence justifiée</option>
+        <option value="Badge scanné par erreur">Badge scanné par erreur</option>
+        <option value="Autre">Autre (préciser)</option>
+      </select>
+      <textarea id="raison-autre" placeholder="Précisez la raison..." style="display:none;min-height:70px"></textarea>
+    </div>
+    <div class="btn-actions">
+      <button class="btn btn-danger" onclick="confirmerSuppression()">Confirmer la suppression</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-raison')">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL GESTION COMPTES (admin) -->
 <div class="modal-overlay" id="modal-comptes">
   <div class="modal" style="width:720px">
@@ -573,6 +629,8 @@ td{padding:10px 12px;color:var(--text)}
     <div class="aside-item" onclick="goPage('pointage',this)"><span class="icon">🎯</span> Pointage</div>
     <div class="aside-item" onclick="goPage('users',this)"><span class="icon">👥</span> Salariés</div>
     <div class="aside-item" onclick="goPage('export',this)"><span class="icon">📤</span> Export</div>
+    <div class="aside-item" onclick="goPage('historique',this)"><span class="icon">📜</span> Historique</div>
+    <div class="aside-item" onclick="goPage('historique',this)"><span class="icon">📜</span> Historique</div>
     <div class="aside-item" onclick="goPage('moncompte',this)"><span class="icon">⚙️</span> Mon compte</div>
     <div class="aside-item" id="admin-menu-item" onclick="openComptesModal()" style="display:none"><span class="icon">🔑</span> Comptes</div>
     <div style="padding:10px 14px;border-top:1px solid var(--border)">
@@ -589,7 +647,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.11
+        v1.8.12
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -796,6 +854,80 @@ td{padding:10px 12px;color:var(--text)}
               <button class="btn btn-danger" onclick="logout()" style="width:100%;justify-content:center">🚪 Se déconnecter</button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIQUE -->
+    <div class="page" id="page-historique">
+      <div class="card card-accent">
+        <div class="card-header">
+          <div class="card-title">📜 Historique des actions</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="hist-filter-action" onchange="renderHistorique()" style="width:160px;margin:0">
+              <option value="">Toutes les actions</option>
+              <option value="PRÉSENCE">✅ Présence</option>
+              <option value="SUPPRESSION">❌ Suppression</option>
+            </select>
+            <select id="hist-filter-event" onchange="renderHistorique()" style="width:180px;margin:0">
+              <option value="">Tous les événements</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadHistorique()">↻ Actualiser</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date/Heure</th>
+                <th>Action</th>
+                <th>Pointeur</th>
+                <th>Participant</th>
+                <th>Événement</th>
+                <th>Détails</th>
+              </tr>
+            </thead>
+            <tbody id="historique-body">
+              <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📜</div><div>Chargement...</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIQUE -->
+    <div class="page" id="page-historique">
+      <div class="card card-accent">
+        <div class="card-header">
+          <div class="card-title">📜 Historique des actions</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="hist-filter-action" onchange="renderHistorique()" style="width:160px;margin:0">
+              <option value="">Toutes les actions</option>
+              <option value="PRÉSENCE">✅ Présence</option>
+              <option value="SUPPRESSION">❌ Suppression</option>
+            </select>
+            <select id="hist-filter-event" onchange="renderHistorique()" style="width:180px;margin:0">
+              <option value="">Tous les événements</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="loadHistorique()">↻ Actualiser</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date/Heure</th>
+                <th>Action</th>
+                <th>Pointeur</th>
+                <th>Participant</th>
+                <th>Événement</th>
+                <th>Détails</th>
+              </tr>
+            </thead>
+            <tbody id="historique-body">
+              <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📜</div><div>Chargement...</div></div></td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1253,9 +1385,10 @@ function navigateTo(name, pushState=true) {
   // Sync bottom nav
   const navItems = document.querySelectorAll('.mobile-nav-item');
   if(idx>=0 && navItems[idx]) navItems[idx].classList.add('active');
-  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte'};
+  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte',historique:'Historique'};
   document.getElementById('top-title').innerHTML=`<span>${titles[name]||name}</span>`;
   if(name==='moncompte') renderMonCompte();
+  if(name==='historique') loadHistorique();
   if(name==='evenements'||name==='dashboard') { renderEvents(); renderDashboard(); }
   // Pousser dans l'historique
   if(pushState) history.pushState({page: name}, '', '#'+name);
@@ -1446,6 +1579,38 @@ function renderPointage(){
 
 async function togglePresence(userId,current,presenceId){
   if(!currentEventId) return;
+  // Si suppression → demander la raison
+  if(current) {
+    document.getElementById('raison-user-id').value = userId;
+    document.getElementById('raison-present').value = current;
+    document.getElementById('raison-presence-id').value = presenceId||'';
+    document.getElementById('raison-select').value = '';
+    document.getElementById('raison-autre').style.display='none';
+    document.getElementById('raison-autre').value='';
+    document.getElementById('modal-raison').classList.add('show');
+    return;
+  }
+  await doTogglePresence(userId, current, presenceId, null);
+}
+
+function toggleRaisonAutre(val) {
+  document.getElementById('raison-autre').style.display = val==='Autre' ? 'block' : 'none';
+}
+
+async function confirmerSuppression() {
+  const raison = document.getElementById('raison-select').value;
+  const raisonAutre = document.getElementById('raison-autre').value.trim();
+  if(!raison) { toast('Veuillez sélectionner une raison.','error'); return; }
+  const raisonFinale = raison==='Autre' ? (raisonAutre||'Autre') : raison;
+  const userId = document.getElementById('raison-user-id').value;
+  const current = document.getElementById('raison-present').value === 'true';
+  const presenceId = document.getElementById('raison-presence-id').value;
+  closeModal('modal-raison');
+  await doTogglePresence(userId, current, presenceId, raisonFinale);
+}
+
+async function doTogglePresence(userId,current,presenceId,raison){
+  if(!currentEventId) return;
   const heure=!current?nowHeure():null;
   const pointePar=currentPointeur?currentPointeur.display:null;
   try {
@@ -1463,6 +1628,16 @@ async function togglePresence(userId,current,presenceId){
       if(!res.ok) throw new Error((await res.json()).message);
       const np=await res.json();presences.push(Array.isArray(np)?np[0]:np);
     }
+    // Log historique
+    const ev = events.find(e=>e.id===currentEventId);
+    const user = users.find(u=>u.id===userId);
+    await logHistorique(
+      !current ? 'PRÉSENCE' : 'SUPPRESSION',
+      pointePar || '—',
+      user ? user.nom+' '+user.prenom : userId,
+      ev ? ev.nom : currentEventId,
+      !current ? `Arrivée à ${heure}` : `Raison : ${raison||'Non précisée'}`
+    );
     updatePointageStats();renderPointage();renderDashboard();renderEvents();
     toast(!current?'✅ Présent à '+heure:'↩ Présence annulée',!current?'success':'info');
   } catch(e){toast('Erreur : '+e.message,'error');}
@@ -1645,6 +1820,8 @@ async function doScan(){
       if(!res.ok) throw new Error();
       const np=await res.json();presences.push(Array.isArray(np)?np[0]:np);
     }
+    const evNfc = events.find(e=>e.id===currentEventId);
+    await logHistorique('PRÉSENCE (NFC)', currentPointeur?.display||'—', user.nom+' '+user.prenom, evNfc?evNfc.nom:'—', `Badge scanné à ${heure}`);
     updatePointageStats();renderPointage();renderDashboard();renderEvents();
     resultEl.className='scan-result ok';resultEl.textContent=`✅ ${user.nom} ${user.prenom} — présent à ${heure}`;
     zone.className='scan-zone flash';setTimeout(()=>{zone.className='scan-zone';resultEl.textContent='';},3000);
@@ -2132,6 +2309,62 @@ function installPWA() {
   }
 }
 
+// ── HISTORIQUE ───────────────────────────────────────────────
+let historiqueData = [];
+
+async function logHistorique(action, pointeur, userNom, evenementNom, details) {
+  try {
+    await fetch(api('historique'), {
+      method:'POST', headers:H(),
+      body:JSON.stringify({action, pointeur, user_nom:userNom, evenement_nom:evenementNom, details})
+    });
+  } catch(e) { /* silencieux */ }
+}
+
+async function loadHistorique() {
+  try {
+    const res = await fetch(api('historique')+'?order=created_at.desc&limit=200', {headers:H()});
+    historiqueData = await res.json();
+    // Remplir filtre événement
+    const evSel = document.getElementById('hist-filter-event');
+    if(evSel) {
+      const evNames = [...new Set(historiqueData.map(h=>h.evenement_nom).filter(Boolean))];
+      evSel.innerHTML = '<option value="">Tous les événements</option>' +
+        evNames.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+    }
+    renderHistorique();
+  } catch(e) { toast('Erreur historique : '+e.message,'error'); }
+}
+
+function renderHistorique() {
+  const filterAction = document.getElementById('hist-filter-action')?.value || '';
+  const filterEvent = document.getElementById('hist-filter-event')?.value || '';
+  let data = historiqueData;
+  if(filterAction) data = data.filter(h=>h.action.includes(filterAction));
+  if(filterEvent) data = data.filter(h=>h.evenement_nom===filterEvent);
+  const tbody = document.getElementById('historique-body');
+  if(!data.length) {
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📜</div><div>Aucune action enregistrée.</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(h => {
+    const isPresence = h.action.includes('PRÉSENCE');
+    const badge = isPresence
+      ? `<span class="badge badge-present">✅ ${esc(h.action)}</span>`
+      : `<span class="badge badge-absent">❌ ${esc(h.action)}</span>`;
+    const dt = new Date(h.created_at);
+    const dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    return `<tr>
+      <td class="mono" style="font-size:11px;white-space:nowrap">${dateStr}</td>
+      <td>${badge}</td>
+      <td class="mono">${esc(h.pointeur||'—')}</td>
+      <td><strong>${esc(h.user_nom||'—')}</strong></td>
+      <td class="mono">${esc(h.evenement_nom||'—')}</td>
+      <td style="font-size:11px;color:var(--muted);max-width:180px;white-space:normal">${esc(h.details||'—')}</td>
+    </tr>`;
+  }).join('');
+}
+
 function dl(href,filename){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
 
 function renderMonCompte() {
@@ -2218,6 +2451,12 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('export',this)">
       <span class="mn-icon">📤</span><span>Export</span>
+    </button>
+    <button class="mobile-nav-item" onclick="mobileNav('historique',this)">
+      <span class="mn-icon">📜</span><span>Historique</span>
+    </button>
+    <button class="mobile-nav-item" onclick="mobileNav('historique',this)">
+      <span class="mn-icon">📜</span><span>Historique</span>
     </button>
   </nav>
 
