@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.52
+        v1.8.53
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1628,24 +1628,7 @@ function verifierAlertParking() {
   updateParkingBar();
 }
 
-function setModePointage(mode) {
-  modePointage = mode;
-  const btnEntree = document.getElementById('mode-entree-btn');
-  const btnRepas = document.getElementById('mode-repas-btn');
-  const parkingBar = document.getElementById('parking-bar');
-  if(btnEntree && btnRepas) {
-    btnEntree.style.background = mode==='entree' ? 'var(--accent)' : 'transparent';
-    btnEntree.style.color = mode==='entree' ? '#fff' : 'var(--muted)';
-    btnRepas.style.background = mode==='repas' ? '#2dd4a0' : 'transparent';
-    btnRepas.style.color = mode==='repas' ? '#fff' : 'var(--muted)';
-  }
-  // Masquer parking bar en mode repas
-  if(parkingBar) parkingBar.style.display = (mode==='repas' || !currentParkingId) ? 'none' : 'block';
-  // Changer placeholder recherche
-  const search = document.getElementById('pointage-search');
-  if(search) search.placeholder = mode==='repas' ? '🍽️ Rechercher un invité présent...' : '🔍 Rechercher parmi les invités...';
-  renderPointage();
-}
+// setModePointage supprimé
 
 function getRepasData() {
   if(!currentEventId) return [];
