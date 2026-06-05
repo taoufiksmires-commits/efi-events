@@ -749,7 +749,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.35
+        v1.8.36
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1070,7 +1070,7 @@ const KEY_ = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const STORAGE_URL = `${URL_}/storage/v1/object/public/events-images/`;
 const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png';
 
-let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[];
+let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[];
 let currentPointeur = null; // objet pointeur complet
 let currentParkingId = null; // parking sélectionné par le pointeur
 let currentFilter = 'tous';
@@ -1428,17 +1428,18 @@ async function revoquerCompte(id) {
 async function loadAll() {
   showLoading('Chargement EFI Events...');
   try {
-    const [u,e,p,inv,pt,pk] = await Promise.all([
+    const [u,e,p,inv,pt,pk,ps] = await Promise.all([
       fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('invitations')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('pointeurs')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('parkings')+'?actif=eq.true&order=nom.asc',{headers:H()}).then(r=>r.json()),
+      fetch(api('parking_sessions')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
     ]);
     users=Array.isArray(u)?u:[];events=Array.isArray(e)?e:[];
     presences=Array.isArray(p)?p:[];invitations=Array.isArray(inv)?inv:[];
-    pointeurs=Array.isArray(pt)?pt:[];parkings=Array.isArray(pk)?pk:[];
+    pointeurs=Array.isArray(pt)?pt:[];parkings=Array.isArray(pk)?pk:[];parkingSessions=Array.isArray(ps)?ps:[];
     // Notifier si comptes en attente (admin seulement)
     if(currentPointeur?.role==='admin') {
       const pending = pointeurs.filter(p=>p.role==='en_attente').length;
@@ -1456,13 +1457,14 @@ async function loadAll() {
 
 async function silentRefresh() {
   try {
-    const [u,e,p,inv,pt,pk] = await Promise.all([
+    const [u,e,p,inv,pt,pk,ps] = await Promise.all([
       fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('invitations')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('pointeurs')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('parkings')+'?actif=eq.true&order=nom.asc',{headers:H()}).then(r=>r.json()),
+      fetch(api('parking_sessions')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
     ]);
     const h=d=>JSON.stringify(d.map(x=>x.id+(x.present||'')));
     const changed=h(p)!==h(presences)||h(inv)!==h(invitations)||u.length!==users.length||e.length!==events.length||pt.length!==pointeurs.length;
@@ -1504,12 +1506,12 @@ function ouvrirModalParking() {
 
 function getNbVoituresParking(parkingId) {
   if(!currentEventId) return 0;
-  return presences.filter(p => p.evenement_id===currentEventId && p.present && p.parking_id===parkingId).length
-    + (parkingInitCounts[parkingId] || 0);
+  const session = parkingSessions.find(s=>s.parking_id===parkingId && s.evenement_id===currentEventId);
+  const init = session ? session.voitures_init : 0;
+  const badges = presences.filter(p=>p.evenement_id===currentEventId && p.present && p.parking_id===parkingId).length;
+  return init + badges;
 }
 
-// Stockage init voitures par parking (session)
-let parkingInitCounts = JSON.parse(sessionStorage.getItem('parkingInitCounts')||'{}');
 let pendingParkingId = null;
 
 async function choisirParking(parkingId) {
@@ -1519,31 +1521,40 @@ async function choisirParking(parkingId) {
     updateParkingBar();
     return;
   }
-  // Vérifier si premier pointeur sur ce parking pour cet événement
-  const dejaBadges = presences.filter(p => p.evenement_id===currentEventId && p.parking_id===parkingId).length;
-  const initFait = parkingInitCounts[parkingId] !== undefined;
-  if(dejaBadges === 0 && !initFait) {
-    // Premier — demander voitures déjà présentes
+  // Chercher session existante en base
+  const session = parkingSessions.find(s=>s.parking_id===parkingId && s.evenement_id===currentEventId);
+  if(!session) {
+    // Pas de session → premier pointeur, demander init
     pendingParkingId = parkingId;
     const pk = parkings.find(p=>p.id===parkingId);
     document.getElementById('init-parking-nom').textContent = pk ? '🅿️ '+pk.nom : 'Parking';
     document.getElementById('init-voitures-nb').value = '0';
     document.getElementById('modal-init-voitures').classList.add('show');
   } else {
+    // Session existante → utiliser directement
     currentParkingId = parkingId;
     updateParkingBar();
   }
 }
 
-function confirmerInitVoitures() {
+async function confirmerInitVoitures() {
   const nb = parseInt(document.getElementById('init-voitures-nb').value) || 0;
-  parkingInitCounts[pendingParkingId] = nb;
-  sessionStorage.setItem('parkingInitCounts', JSON.stringify(parkingInitCounts));
-  currentParkingId = pendingParkingId;
-  pendingParkingId = null;
   closeModal('modal-init-voitures');
-  updateParkingBar();
-  toast(`🅿️ Parking initialisé avec ${nb} voiture(s)`, 'info');
+  showLoading('Initialisation du parking...');
+  try {
+    // Sauvegarder en base
+    const payload = {parking_id: pendingParkingId, evenement_id: currentEventId, voitures_init: nb};
+    const res = await fetch(api('parking_sessions'), {method:'POST', headers:H(), body:JSON.stringify(payload)});
+    if(!res.ok) throw new Error((await res.json()).message);
+    const ns = await res.json();
+    parkingSessions.push(Array.isArray(ns)?ns[0]:ns);
+    currentParkingId = pendingParkingId;
+    pendingParkingId = null;
+    updateParkingBar();
+    toast(`🅿️ Parking initialisé avec ${nb} voiture(s)`, 'info');
+  } catch(e) {
+    toast('Erreur init parking : '+e.message, 'error');
+  } finally { hideLoading(); }
 }
 
 function confirmerInitVoitures0() {
