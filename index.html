@@ -635,9 +635,12 @@ td{padding:10px 12px;color:var(--text)}
         <div class="scan-zone" id="scan-zone">
           <span style="font-size:24px">📡</span>
           <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
               <div style="font-weight:600;font-size:13px">Scanner un badge EFI</div>
-              <span id="nfc-status" style="font-size:11px;color:var(--muted)">⏳ Init NFC...</span>
+              <span id="nfc-status" style="font-size:11px;color:var(--muted)">⏳ En attente</span>
+              <button id="nfc-btn" onclick="startNFC()" class="btn btn-success btn-sm" style="padding:5px 12px;font-size:11px">
+                📡 Activer NFC
+              </button>
             </div>
             <div class="scan-result" id="scan-result"></div>
           </div>
@@ -956,7 +959,7 @@ function showApp() {
   loadAll().then(() => {
     setInterval(silentRefresh, 6000);
     document.addEventListener('keydown', onGlobalKey);
-    initNFC(); // Démarrer le lecteur NFC
+    // NFC démarré manuellement par l'utilisateur via bouton
   });
 }
 
@@ -1420,6 +1423,12 @@ async function togglePresence(userId,current,presenceId){
 
 // SCAN
 // ── WEB NFC API ──────────────────────────────────────────────
+async function startNFC() {
+  const btn = document.getElementById('nfc-btn');
+  if(btn) { btn.textContent='⏳ Activation...'; btn.disabled=true; }
+  await initNFC();
+}
+
 async function initNFC() {
   if(!('NDEFReader' in window)) {
     console.log('Web NFC non supporté sur ce navigateur');
@@ -1430,6 +1439,9 @@ async function initNFC() {
     nfcReader = new NDEFReader();
     await nfcReader.scan();
     updateNFCStatus('active');
+    // Masquer le bouton une fois activé
+    const btn = document.getElementById('nfc-btn');
+    if(btn) btn.style.display='none';
     console.log('✅ NFC actif');
 
     nfcReader.addEventListener('reading', ({message, serialNumber}) => {
@@ -1483,16 +1495,23 @@ async function initNFC() {
 
 function updateNFCStatus(status) {
   const el = document.getElementById('nfc-status');
+  const btn = document.getElementById('nfc-btn');
   if(!el) return;
   const configs = {
     active:       { text:'📡 NFC actif', color:'var(--success)' },
     unsupported:  { text:'⌨️ Mode clavier', color:'var(--muted)' },
-    denied:       { text:'❌ NFC refusé', color:'var(--danger)' },
-    error:        { text:'⚠️ NFC erreur', color:'var(--accent2)' },
+    denied:       { text:'⚠️ Autorisation refusée', color:'var(--accent2)' },
+    error:        { text:'⚠️ Erreur NFC', color:'var(--accent2)' },
   };
   const cfg = configs[status] || configs.error;
   el.textContent = cfg.text;
   el.style.color = cfg.color;
+  // Remettre le bouton si erreur ou refus
+  if(btn && status !== 'active') {
+    btn.style.display = '';
+    btn.textContent = status==='denied' ? '🔓 Réessayer' : '📡 Activer NFC';
+    btn.disabled = false;
+  }
 }
 
 // Fallback clavier (pour les lecteurs USB ou saisie manuelle)
