@@ -632,7 +632,10 @@ td{padding:10px 12px;color:var(--text)}
         <div class="scan-zone" id="scan-zone">
           <span style="font-size:24px">📡</span>
           <div style="flex:1">
-            <div style="font-weight:600;font-size:13px;margin-bottom:3px">Scanner un badge EFI</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px">
+              <div style="font-weight:600;font-size:13px">Scanner un badge EFI</div>
+              <span id="nfc-status" style="font-size:11px;color:var(--muted)">⏳ Init NFC...</span>
+            </div>
             <div class="scan-result" id="scan-result"></div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
@@ -791,6 +794,7 @@ const ADMIN_EMAIL = 'taoufik.smires@efiautomotive.com';
 const ADMIN_PWD = 'admin123';
 let currentEventId=null;
 let scanBuffer='', scanTimer2=null;
+let nfcReader = null;
 let importUsersParsed=[], invImportParsed=[];
 let currentInviteFilter='';
 let currentInviteEventId=null;
@@ -949,6 +953,7 @@ function showApp() {
   loadAll().then(() => {
     setInterval(silentRefresh, 6000);
     document.addEventListener('keydown', onGlobalKey);
+    initNFC(); // Démarrer le lecteur NFC
   });
 }
 
@@ -1411,12 +1416,88 @@ async function togglePresence(userId,current,presenceId){
 }
 
 // SCAN
+// ── WEB NFC API ──────────────────────────────────────────────
+async function initNFC() {
+  if(!('NDEFReader' in window)) {
+    console.log('Web NFC non supporté sur ce navigateur');
+    updateNFCStatus('unsupported');
+    return;
+  }
+  try {
+    nfcReader = new NDEFReader();
+    await nfcReader.scan();
+    updateNFCStatus('active');
+    console.log('✅ NFC actif');
+
+    nfcReader.addEventListener('reading', ({message, serialNumber}) => {
+      console.log('📡 NFC lu - Serial:', serialNumber, '| Message:', message);
+      let cardValue = '';
+
+      // 1. Utiliser le numéro de série du badge (le plus fiable)
+      if(serialNumber) {
+        cardValue = serialNumber;
+        console.log('📡 Serial number:', serialNumber);
+      }
+
+      // 2. Ou lire les records NDEF si présents
+      if(!cardValue && message?.records?.length > 0) {
+        for(const record of message.records) {
+          if(record.recordType === 'text') {
+            const decoder = new TextDecoder(record.encoding || 'utf-8');
+            cardValue = decoder.decode(record.data);
+            break;
+          } else if(record.recordType === 'url') {
+            const decoder = new TextDecoder();
+            cardValue = decoder.decode(record.data);
+            break;
+          } else {
+            // Données brutes en hex
+            const bytes = new Uint8Array(record.data.buffer);
+            cardValue = Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(':');
+            break;
+          }
+        }
+      }
+
+      if(cardValue) {
+        console.log('📡 Valeur carte finale:', cardValue);
+        document.getElementById('scan-input').value = cardValue;
+        doScan();
+      }
+    });
+
+    nfcReader.addEventListener('readingerror', () => {
+      console.log('❌ Erreur lecture NFC');
+      updateNFCStatus('error');
+    });
+
+  } catch(err) {
+    console.log('❌ NFC erreur:', err.name, err.message);
+    if(err.name === 'NotAllowedError') updateNFCStatus('denied');
+    else updateNFCStatus('error');
+  }
+}
+
+function updateNFCStatus(status) {
+  const el = document.getElementById('nfc-status');
+  if(!el) return;
+  const configs = {
+    active:       { text:'📡 NFC actif', color:'var(--success)' },
+    unsupported:  { text:'⌨️ Mode clavier', color:'var(--muted)' },
+    denied:       { text:'❌ NFC refusé', color:'var(--danger)' },
+    error:        { text:'⚠️ NFC erreur', color:'var(--accent2)' },
+  };
+  const cfg = configs[status] || configs.error;
+  el.textContent = cfg.text;
+  el.style.color = cfg.color;
+}
+
+// Fallback clavier (pour les lecteurs USB ou saisie manuelle)
 function onGlobalKey(e){
   const tag=document.activeElement.tagName;
   if((tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')&&document.activeElement.id!=='scan-input') return;
   if(e.key==='Enter'){
     if(scanBuffer.length>0){
-      console.log('📡 NFC reçu (Enter):', JSON.stringify(scanBuffer));
       document.getElementById('scan-input').value=scanBuffer;
       doScan();
     }
@@ -1427,7 +1508,6 @@ function onGlobalKey(e){
     clearTimeout(scanTimer2);
     scanTimer2=setTimeout(()=>{
       if(scanBuffer.length>0){
-        console.log('📡 NFC reçu (timeout):', JSON.stringify(scanBuffer), 'longueur:', scanBuffer.length);
         document.getElementById('scan-input').value=scanBuffer;
         doScan();
       }
