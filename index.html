@@ -1440,11 +1440,16 @@ async function doScan(){
   let numCarte=document.getElementById('scan-input').value.trim();
   const resultEl=document.getElementById('scan-result');
   const zone=document.getElementById('scan-zone');
+  console.log('📡 doScan:', JSON.stringify(numCarte));
   if(!numCarte) return;
   document.getElementById('scan-input').value='';
   if(!currentEventId){resultEl.className='scan-result warn';resultEl.textContent='⚠ Sélectionnez un événement d\'abord';return;}
-  const n=s=>(s||'').toUpperCase().replace(/\s/g,'').trim();
+  // Normalisation étendue : majuscules, sans espaces, sans tirets, sans underscores
+  const n=s=>(s||'').toUpperCase().replace(/[\s\-_:]/g,'').trim();
+  console.log('📡 Normalisé:', n(numCarte));
+  console.log('📡 Base:', users.map(u=>u.numero_carte).filter(Boolean).map(c=>({raw:c,norm:n(c)})));
   const user=users.find(u=>n(u.numero_carte)===n(numCarte));
+  console.log('📡 User:', user?user.nom+' '+user.prenom:'INTROUVABLE');
   if(!user){
     resultEl.className='scan-result err';resultEl.textContent='❌ Badge non reconnu : '+numCarte;
     zone.className='scan-zone flash-err';setTimeout(()=>{zone.className='scan-zone';},1500);
