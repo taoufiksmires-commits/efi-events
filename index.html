@@ -578,7 +578,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.8
+        v1.8.9
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -2032,12 +2032,27 @@ function showScanPopup(numCarte, status, nom, info) {
   }, cfg.duration);
 }
 
-// Fermer en cliquant sur l'overlay
+// Fermer en cliquant n'importe où sur la page
+function closeScanPopup() {
+  clearTimeout(scanPopupTimer);
+  document.getElementById('scan-popup')?.classList.remove('show');
+  document.getElementById('scan-popup-overlay')?.classList.remove('show');
+}
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('scan-popup-overlay')?.addEventListener('click', () => {
-    clearTimeout(scanPopupTimer);
-    document.getElementById('scan-popup').classList.remove('show');
-    document.getElementById('scan-popup-overlay').classList.remove('show');
+  document.getElementById('scan-popup-overlay')?.addEventListener('click', closeScanPopup);
+  document.getElementById('scan-popup')?.addEventListener('click', closeScanPopup);
+  // Fermer aussi si on touche ailleurs sur la page
+  document.addEventListener('touchstart', e => {
+    const popup = document.getElementById('scan-popup');
+    if(popup?.classList.contains('show') && !popup.contains(e.target)) {
+      closeScanPopup();
+    }
+  }, {passive: true});
+  document.addEventListener('mousedown', e => {
+    const popup = document.getElementById('scan-popup');
+    if(popup?.classList.contains('show') && !popup.contains(e.target)) {
+      closeScanPopup();
+    }
   });
 });
 
