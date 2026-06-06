@@ -601,8 +601,17 @@ td{padding:10px 12px;color:var(--text)}
     <button onclick="closeMobileAdminMenu();mobileNav('parkings',null)" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
       <span style="font-size:20px">🅿️</span> Gérer les parkings
     </button>
-    <button onclick="closeMobileAdminMenu();mobileNav('users',document.querySelectorAll('.mobile-nav-item')[3])" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
+    <button onclick="closeMobileAdminMenu();mobileNav('users',null)" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
       <span style="font-size:20px">👥</span> Gérer les salariés
+    </button>
+    <button onclick="closeMobileAdminMenu();mobileNav('tombola',null)" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
+      <span style="font-size:20px">🎰</span> Tombola
+    </button>
+    <button onclick="closeMobileAdminMenu();mobileNav('historique',null)" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
+      <span style="font-size:20px">📜</span> Historique
+    </button>
+    <button onclick="closeMobileAdminMenu();mobileNav('export',null)" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;cursor:pointer;width:100%">
+      <span style="font-size:20px">📤</span> Export
     </button>
   </div>
 </div>
@@ -760,7 +769,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.81
+        v1.8.82
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -3264,15 +3273,6 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('users',this)">
       <span class="mn-icon">👥</span><span>Salariés</span>
-    </button>
-    <button class="mobile-nav-item" onclick="mobileNav('export',this)">
-      <span class="mn-icon">📤</span><span>Export</span>
-    </button>
-    <button class="mobile-nav-item" onclick="mobileNav('historique',this)">
-      <span class="mn-icon">📜</span><span>Historique</span>
-    </button>
-    <button class="mobile-nav-item" onclick="mobileNav('tombola',this)">
-      <span class="mn-icon">🎰</span><span>Tombola</span>
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('moncompte',this)">
       <span class="mn-icon">⚙️</span><span>Compte</span>
