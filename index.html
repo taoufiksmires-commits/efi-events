@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.72
+        v1.8.73
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1098,6 +1098,7 @@ function confirmerMode(mode){
     currentEventId=pendingEId;
     document.getElementById('page-repas-full').style.display='block';
     afficherRepas();
+    setTimeout(showNFCModal,400);
   } else {
     selectEvent(pendingEId);
   }
@@ -1134,11 +1135,29 @@ function afficherRepas(){
       h+='<div class="p-meta">'+([x.dept,x.mat].filter(Boolean).join(' · ')||'—')+'</div>';
       if(x.servi) h+='<div class="p-arrive">🍽️ Repas servi</div>';
       h+='</div>';
-      h+=x.servi?'<span class="badge badge-present">✅ Servi</span>':'<button class="btn-toggle absent" onclick="servirRepas(\''+x.id+'\')" >🍽️ Servir</button>';
+      if(x.servi){
+        h+='<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">';
+        h+='<span class="badge badge-present">✅ Servi</span>';
+        h+='<button class="btn btn-ghost btn-sm" style="font-size:10px;padding:3px 8px" onclick="annulerRepas(\''+x.id+'\')" >↩ Annuler</button>';
+        h+='</div>';
+      } else {
+        h+='<button class="btn-toggle absent" onclick="servirRepas(\''+x.id+'\')" >🍽️ Servir</button>';
+      }
       h+='</div>';
     });
   }
   document.getElementById('repas-grid').innerHTML=h;
+}
+
+async function annulerRepas(uid){
+  if(!confirm('Annuler le repas de cette personne ?')) return;
+  try{
+    var ro=await fetch(api('repas')+'?user_id=eq.'+uid+'&evenement_id=eq.'+currentEventId,{method:'DELETE',headers:H()});
+    if(!ro.ok) throw new Error('Erreur suppression');
+    repas=repas.filter(function(x){return !(x.user_id===uid&&x.evenement_id===currentEventId);});
+    afficherRepas();
+    toast('↩ Repas annulé','info');
+  }catch(e){toast('Erreur : '+e.message,'error');}
 }
 
 async function servirRepas(uid){
@@ -2194,6 +2213,17 @@ async function doScan(){
     showScanPopup(numCarte,'error','Badge inconnu','Ce badge n\'est pas dans la base');
     return;
   }
+  // Mode repas
+  if(modeRepas){
+    const isPresent=presences.some(p=>p.evenement_id===currentEventId&&p.user_id===user.id&&p.present);
+    if(!isPresent){
+      showScanPopup(numCarte,'error',user.nom+' '+user.prenom,'Non présent — repas refusé !');
+      playSound('error'); return;
+    }
+    servirRepas(user.id);
+    return;
+  }
+
   const isInvited=invitations.some(i=>i.evenement_id===currentEventId&&i.user_id===user.id);
   if(!isInvited){
     resultEl.className='scan-result warn';resultEl.textContent=`⚠ ${user.nom} ${user.prenom} — non invité à cet événement`;
