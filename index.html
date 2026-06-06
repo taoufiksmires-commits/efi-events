@@ -738,7 +738,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="aside-section">Navigation</div>
     <div class="aside-item active" onclick="goPage('dashboard',this)"><span class="icon">🏠</span> Dashboard</div>
     <div class="aside-item" onclick="goPage('evenements',this)"><span class="icon">📅</span> Événements</div>
-    <div class="aside-item" onclick="goPage('pointage',this)"><span class="icon">🎯</span> Pointage</div>
+    <div class="aside-item" onclick="clicPointageNav(this)"><span class="icon">🎯</span> Pointage</div>
     <div class="aside-item" onclick="goPage('users',this)"><span class="icon">👥</span> Salariés</div>
     <div class="aside-item" onclick="goPage('export',this)"><span class="icon">📤</span> Export</div>
     <div class="aside-item" onclick="goPage('historique',this)"><span class="icon">📜</span> Historique</div>
@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.79
+        v1.8.80
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1082,6 +1082,20 @@ const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-
 
 let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[], repas=[];
 let pendingEId=null, modeRepas=false;
+
+function clicPointageNav(el){
+  // Si un événement est déjà sélectionné, proposer le choix mode
+  if(currentEventId){
+    pendingEId=currentEventId;
+    var ev=events.find(function(e){return e.id===currentEventId;});
+    var nomEl=document.getElementById('choix-event-nom');
+    if(nomEl&&ev) nomEl.textContent=ev.nom+(ev.date?' · '+fmtDate(ev.date):'');
+    document.getElementById('modal-choix-mode').style.display='flex';
+  } else {
+    // Sinon naviguer normalement vers le picker d'événement
+    mobileNav('pointage',el);
+  }
+}
 
 function demanderMode(eid){
   pendingEId=eid;
@@ -3093,7 +3107,7 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
     <button class="mobile-nav-item" onclick="mobileNav('evenements',this)">
       <span class="mn-icon">📅</span><span>Événements</span>
     </button>
-    <button class="mobile-nav-item" onclick="mobileNav('pointage',this)">
+    <button class="mobile-nav-item" onclick="clicPointageNav(this)">
       <span class="mn-icon">🎯</span><span>Pointage</span>
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('users',this)">
