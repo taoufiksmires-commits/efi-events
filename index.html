@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.78
+        v1.8.79
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1103,6 +1103,46 @@ function confirmerMode(mode){
   } else {
     selectEvent(pendingEId);
   }
+}
+
+function activerNFCRepas(){
+  var btn=document.getElementById('nfc-repas-btn');
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
+  if(!('NDEFReader' in window)){
+    toast('NFC non supporté sur cet appareil','error');
+    if(btn){btn.textContent='📡 NFC';btn.disabled=false;}
+    return;
+  }
+  var reader=new NDEFReader();
+  reader.scan().then(function(){
+    if(btn){btn.textContent='📡 Actif';btn.style.background='rgba(45,212,160,.25)';btn.disabled=true;}
+    reader.addEventListener('reading',function(e){
+      var cardValue=e.serialNumber||'';
+      if(!cardValue&&e.message&&e.message.records&&e.message.records.length>0){
+        try{
+          var rec=e.message.records[0];
+          if(rec.recordType==='text') cardValue=new TextDecoder(rec.encoding||'utf-8').decode(rec.data);
+          else if(rec.recordType==='url') cardValue=new TextDecoder().decode(rec.data);
+        }catch(err){}
+      }
+      if(!cardValue) return;
+      var n=function(s){return (s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');};
+      var user=users.find(function(u){return n(u.numero_carte)===n(cardValue);});
+      if(!user){
+        showScanPopup(cardValue,'error','Badge inconnu','Ce badge n\'est pas dans la base');
+        playSound('error'); return;
+      }
+      var isPresent=presences.some(function(p){return p.evenement_id===currentEventId&&p.user_id===user.id&&p.present;});
+      if(!isPresent){
+        showScanPopup(cardValue,'error',user.nom+' '+user.prenom,'Non présent — repas refusé !');
+        playSound('error'); return;
+      }
+      servirRepas(user.id);
+    });
+  }).catch(function(err){
+    toast('NFC : '+err.message,'error');
+    if(btn){btn.textContent='📡 NFC';btn.disabled=false;}
+  });
 }
 
 function fermerRepas(){
@@ -3133,6 +3173,7 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;position:sticky;top:0;background:var(--bg);padding-bottom:10px;z-index:10">
     <button onclick="fermerRepas()" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 14px;cursor:pointer;font-size:13px;white-space:nowrap">← Retour</button>
     <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;flex:1">🍽️ Pointage Repas</div>
+    <button id="nfc-repas-btn" onclick="activerNFCRepas()" style="background:rgba(45,212,160,.12);border:1px solid rgba(45,212,160,.3);border-radius:8px;color:var(--success);padding:8px 12px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">📡 NFC</button>
     <div style="text-align:right;flex-shrink:0">
       <div id="repas-cpt" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--success)">0/0</div>
       <div style="font-size:10px;color:var(--muted)">servis</div>
