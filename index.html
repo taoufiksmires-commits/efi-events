@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.74
+        v1.8.75
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1557,10 +1557,11 @@ async function loadAll() {
       fetch(api('pointeurs')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('parkings')+'?actif=eq.true&order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('parking_sessions')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('repas')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
     ]);
     users=Array.isArray(u)?u:[];events=Array.isArray(e)?e:[];
     presences=Array.isArray(p)?p:[];invitations=Array.isArray(inv)?inv:[];
-    pointeurs=Array.isArray(pt)?pt:[];parkings=Array.isArray(pk)?pk:[];parkingSessions=Array.isArray(ps)?ps:[];repas=Array.isArray(rp)?rp:[];
+    pointeurs=Array.isArray(pt)?pt:[];parkings=Array.isArray(pk)?pk:[];parkingSessions=Array.isArray(ps)?ps:[];repas=Array.isArray(rp)?rp:[];repas=Array.isArray(rp)?rp:[];
     // Notifier si comptes en attente (admin seulement)
     if(currentPointeur?.role==='admin') {
       const pending = pointeurs.filter(p=>p.role==='en_attente').length;
@@ -1586,6 +1587,7 @@ async function silentRefresh() {
       fetch(api('pointeurs')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('parkings')+'?actif=eq.true&order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('parking_sessions')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('repas')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
     ]);
     const h=d=>JSON.stringify(d.map(x=>x.id+(x.present||'')));
     const changed=h(p)!==h(presences)||h(inv)!==h(invitations)||u.length!==users.length||e.length!==events.length||pt.length!==pointeurs.length;
