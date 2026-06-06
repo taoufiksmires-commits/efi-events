@@ -742,6 +742,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="aside-item" onclick="goPage('users',this)"><span class="icon">👥</span> Salariés</div>
     <div class="aside-item" onclick="goPage('export',this)"><span class="icon">📤</span> Export</div>
     <div class="aside-item" onclick="goPage('historique',this)"><span class="icon">📜</span> Historique</div>
+    <div class="aside-item" onclick="goPage('tombola',this)"><span class="icon">🎰</span> Tombola</div>
     <div class="aside-item" onclick="goPage('moncompte',this)"><span class="icon">⚙️</span> Mon compte</div>
     <div class="aside-item" id="admin-menu-item" onclick="openComptesModal()" style="display:none"><span class="icon">🔑</span> Comptes</div>
     <div class="aside-item" id="parkings-menu-item" onclick="goPage('parkings',this)" style="display:none"><span class="icon">🅿️</span> Parkings</div>
@@ -759,7 +760,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.80
+        v1.8.81
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1042,6 +1043,40 @@ td{padding:10px 12px;color:var(--text)}
       </div>
     </div>
 
+    <!-- TOMBOLA -->
+    <div class="page" id="page-tombola">
+      <div class="card card-accent" style="max-width:600px;margin:0 auto">
+        <div class="card-header">
+          <div class="card-title">🎰 Tombola</div>
+          <select id="tombola-event-sel" onchange="chargerTombola()" style="width:200px;margin:0">
+            <option value="">Choisir un événement</option>
+          </select>
+        </div>
+        <div class="card-body">
+          <!-- Zone tirage -->
+          <div id="tombola-zone" style="text-align:center;padding:20px 0">
+            <div id="tombola-drum" style="font-size:80px;margin-bottom:16px;min-height:100px;display:flex;align-items:center;justify-content:center">🎰</div>
+            <div id="tombola-nom" style="font-family:Bebas Neue,sans-serif;font-size:32px;letter-spacing:2px;color:var(--accent);min-height:40px"></div>
+            <div id="tombola-info" style="font-size:13px;color:var(--muted);margin-top:4px;min-height:20px"></div>
+            <button id="tombola-btn" onclick="tirerTombola()" style="
+              margin-top:24px;padding:16px 40px;border-radius:12px;
+              background:linear-gradient(135deg,var(--accent),#ff6b35);
+              border:none;color:#fff;font-family:Bebas Neue,sans-serif;
+              font-size:22px;letter-spacing:2px;cursor:pointer;
+              box-shadow:0 4px 20px rgba(232,37,26,.4);
+              transition:all .2s;width:100%
+            ">🎲 Tirer un gagnant</button>
+            <div id="tombola-status" style="font-size:12px;color:var(--muted);margin-top:12px"></div>
+          </div>
+          <!-- Liste gagnants -->
+          <div id="tombola-gagnants" style="margin-top:20px;display:none">
+            <div style="font-family:Bebas Neue,sans-serif;font-size:16px;letter-spacing:1px;margin-bottom:10px;color:var(--accent)">🏆 Gagnants</div>
+            <div id="tombola-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- EXPORT -->
     <div class="page" id="page-export">
       <div class="card card-accent">
@@ -1080,7 +1115,7 @@ const KEY_ = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const STORAGE_URL = `${URL_}/storage/v1/object/public/events-images/`;
 const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png';
 
-let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[], repas=[];
+let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[], repas=[], tombola=[];
 let pendingEId=null, modeRepas=false;
 
 function clicPointageNav(el){
@@ -1603,7 +1638,7 @@ async function revoquerCompte(id) {
 async function loadAll() {
   showLoading('Chargement EFI Events...');
   try {
-    const [u,e,p,inv,pt,pk,ps,rp] = await Promise.all([
+    const [u,e,p,inv,pt,pk,ps,rp,tb] = await Promise.all([
       fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
@@ -1612,10 +1647,11 @@ async function loadAll() {
       fetch(api('parkings')+'?actif=eq.true&order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('parking_sessions')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('repas')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('tombola')+'?order=rang.asc',{headers:H()}).then(r=>r.json()),
     ]);
     users=Array.isArray(u)?u:[];events=Array.isArray(e)?e:[];
     presences=Array.isArray(p)?p:[];invitations=Array.isArray(inv)?inv:[];
-    pointeurs=Array.isArray(pt)?pt:[];parkings=Array.isArray(pk)?pk:[];parkingSessions=Array.isArray(ps)?ps:[];repas=Array.isArray(rp)?rp:[];repas=Array.isArray(rp)?rp:[];
+    pointeurs=Array.isArray(pt)?pt:[];parkings=Array.isArray(pk)?pk:[];parkingSessions=Array.isArray(ps)?ps:[];repas=Array.isArray(rp)?rp:[];tombola=Array.isArray(tb)?tb:[];repas=Array.isArray(rp)?rp:[];
     // Notifier si comptes en attente (admin seulement)
     if(currentPointeur?.role==='admin') {
       const pending = pointeurs.filter(p=>p.role==='en_attente').length;
@@ -1633,7 +1669,7 @@ async function loadAll() {
 
 async function silentRefresh() {
   try {
-    const [u,e,p,inv,pt,pk,ps,rp] = await Promise.all([
+    const [u,e,p,inv,pt,pk,ps,rp,tb] = await Promise.all([
       fetch(api('users')+'?order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('presences')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
@@ -1642,6 +1678,7 @@ async function silentRefresh() {
       fetch(api('parkings')+'?actif=eq.true&order=nom.asc',{headers:H()}).then(r=>r.json()),
       fetch(api('parking_sessions')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
       fetch(api('repas')+'?order=created_at.desc',{headers:H()}).then(r=>r.json()),
+      fetch(api('tombola')+'?order=rang.asc',{headers:H()}).then(r=>r.json()),
     ]);
     const h=d=>JSON.stringify(d.map(x=>x.id+(x.present||'')));
     const changed=h(p)!==h(presences)||h(inv)!==h(invitations)||u.length!==users.length||e.length!==events.length||pt.length!==pointeurs.length;
@@ -1855,11 +1892,12 @@ function navigateTo(name, pushState=true) {
   // Sync bottom nav
   const navItems = document.querySelectorAll('.mobile-nav-item');
   if(idx>=0 && navItems[idx]) navItems[idx].classList.add('active');
-  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte',historique:'Historique',parkings:'Parkings'};
+  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte',historique:'Historique',parkings:'Parkings',tombola:'🎰 Tombola'};
   document.getElementById('top-title').innerHTML=`<span>${titles[name]||name}</span>`;
   if(name==='moncompte') renderMonCompte();
   if(name==='historique') loadHistorique();
   if(name==='parkings') renderParkings();
+  if(name==='tombola') initTombolaPage();
   if(name==='evenements'||name==='dashboard') { renderEvents(); renderDashboard(); }
   // Pousser dans l'historique
   if(pushState) history.pushState({page: name}, '', '#'+name);
@@ -3029,6 +3067,120 @@ function ouvrirRepas() {
   }
 }
 
+// ── TOMBOLA ──────────────────────────────────────────────
+function initTombolaPage(){
+  var sel=document.getElementById('tombola-event-sel');
+  if(!sel) return;
+  sel.innerHTML='<option value="">Choisir un événement</option>'+
+    events.map(function(ev){return '<option value="'+ev.id+'">'+esc(ev.nom)+(ev.date?' · '+fmtDate(ev.date):'')+'</option>';}).join('');
+  // Auto-sélectionner si 1 seul événement
+  if(events.length===1){sel.value=events[0].id;chargerTombola();}
+}
+
+function chargerTombola(){
+  var evId=document.getElementById('tombola-event-sel').value;
+  if(!evId){document.getElementById('tombola-gagnants').style.display='none';return;}
+  var gagnants=tombola.filter(function(t){return t.evenement_id===evId;}).sort(function(a,b){return a.rang-b.rang;});
+  var presents=presences.filter(function(p){return p.evenement_id===evId&&p.present;}).length;
+  var status=document.getElementById('tombola-status');
+  if(status) status.textContent=presents+' présents éligibles · '+gagnants.length+' gagnant(s) tiré(s)';
+  afficherGagnants(evId);
+}
+
+function afficherGagnants(evId){
+  var gagnants=tombola.filter(function(t){return t.evenement_id===evId;}).sort(function(a,b){return a.rang-b.rang;});
+  var zone=document.getElementById('tombola-gagnants');
+  var list=document.getElementById('tombola-list');
+  if(!zone||!list) return;
+  if(!gagnants.length){zone.style.display='none';return;}
+  zone.style.display='block';
+  list.innerHTML=gagnants.map(function(t){
+    var u=users.find(function(x){return x.id===t.user_id;});
+    var medals=['🥇','🥈','🥉'];
+    var medal=t.rang<=3?medals[t.rang-1]:'🏅';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;margin-bottom:8px">'
+      +'<span style="font-size:28px">'+medal+'</span>'
+      +'<div style="flex:1"><div style="font-weight:700;font-size:15px">'+esc(u?u.nom+' '+u.prenom:'?')+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+(u?esc(u.departement||''):'')+(u&&u.matricule?' · '+esc(u.matricule):'')+'</div></div>'
+      +'<div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--accent)">#'+t.rang+'</div>'
+      +'<button onclick="annulerGagnant(\''+t.id+'\')" style="background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.2);border-radius:6px;color:var(--danger);padding:4px 8px;cursor:pointer;font-size:11px">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+let tombolaAnimation=null;
+
+async function tirerTombola(){
+  var evId=document.getElementById('tombola-event-sel').value;
+  if(!evId){toast('Sélectionnez un événement.','error');return;}
+  // Présents non encore gagnants
+  var dejaGagnants=tombola.filter(function(t){return t.evenement_id===evId;}).map(function(t){return t.user_id;});
+  var eligibles=presences.filter(function(p){
+    return p.evenement_id===evId&&p.present&&!dejaGagnants.includes(p.user_id);
+  });
+  if(!eligibles.length){
+    toast('Tous les présents ont déjà gagné !','info');
+    return;
+  }
+  // Animation tambour
+  var btn=document.getElementById('tombola-btn');
+  var drum=document.getElementById('tombola-drum');
+  var nomEl=document.getElementById('tombola-nom');
+  btn.disabled=true;
+  btn.textContent='🎲 Tirage...';
+  var noms=eligibles.map(function(p){
+    var u=users.find(function(x){return x.id===p.user_id;});
+    return u?u.nom+' '+u.prenom:'?';
+  });
+  var ticks=0, maxTicks=25;
+  var emojis=['🎰','🎲','🥳','🎊','✨','🎯'];
+  tombolaAnimation=setInterval(function(){
+    drum.textContent=emojis[ticks%emojis.length];
+    nomEl.textContent=noms[Math.floor(Math.random()*noms.length)];
+    nomEl.style.color='hsl('+Math.random()*360+',80%,65%)';
+    ticks++;
+    if(ticks>=maxTicks){
+      clearInterval(tombolaAnimation);
+      // Tirer le vrai gagnant
+      var gagnant=eligibles[Math.floor(Math.random()*eligibles.length)];
+      var u=users.find(function(x){return x.id===gagnant.user_id;});
+      var rang=dejaGagnants.length+1;
+      drum.textContent=rang===1?'🥇':rang===2?'🥈':rang===3?'🥉':'🏅';
+      nomEl.textContent=u?u.nom+' '+u.prenom:'?';
+      nomEl.style.color='var(--accent)';
+      nomEl.style.fontSize='36px';
+      document.getElementById('tombola-info').textContent=(u?esc(u.departement||''):'')+' — Gagnant #'+rang;
+      playSound('success');
+      // Sauvegarder en base
+      var pp=currentPointeur?currentPointeur.display:'—';
+      fetch(api('tombola'),{method:'POST',headers:H(),body:JSON.stringify({evenement_id:evId,user_id:gagnant.user_id,rang:rang,tire_par:pp})})
+        .then(function(r){return r.json();})
+        .then(function(nr){
+          tombola.push(Array.isArray(nr)?nr[0]:nr);
+          afficherGagnants(evId);
+          chargerTombola();
+          btn.disabled=false;
+          btn.textContent='🎲 Tirer un autre gagnant';
+          nomEl.style.fontSize='';
+        }).catch(function(e){toast('Erreur: '+e.message,'error');btn.disabled=false;btn.textContent='🎲 Tirer un gagnant';});
+    }
+  },80);
+}
+
+async function annulerGagnant(tombolaId){
+  if(!confirm('Annuler ce tirage ?')) return;
+  try{
+    await fetch(api('tombola')+'?id=eq.'+tombolaId,{method:'DELETE',headers:H()});
+    tombola=tombola.filter(function(t){return t.id!==tombolaId;});
+    var evId=document.getElementById('tombola-event-sel').value;
+    // Recalculer les rangs
+    var restants=tombola.filter(function(t){return t.evenement_id===evId;}).sort(function(a,b){return a.rang-b.rang;});
+    afficherGagnants(evId);
+    chargerTombola();
+    toast('Tirage annulé.','info');
+  }catch(e){toast('Erreur: '+e.message,'error');}
+}
+
 function dl(href,filename){const a=document.createElement('a');a.href=href;a.download=filename;a.click();}
 
 function renderMonCompte() {
@@ -3118,6 +3270,9 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('historique',this)">
       <span class="mn-icon">📜</span><span>Historique</span>
+    </button>
+    <button class="mobile-nav-item" onclick="mobileNav('tombola',this)">
+      <span class="mn-icon">🎰</span><span>Tombola</span>
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('moncompte',this)">
       <span class="mn-icon">⚙️</span><span>Compte</span>
