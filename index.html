@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.71
+        v1.8.72
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -3102,92 +3102,7 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
   <div id="repas-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
 </div>
 
-<script>
-var modeActuel = 'entree';
-// pendingEventId déclaré dans script principal
 
-// Intercepter le clic sur Pointer pour afficher le choix
-selectEvent = function(id) {
-  pendingEventId = id;
-  var ev = events.find(function(e){ return e.id===id; });
-  var nomEl = document.getElementById('choix-event-nom');
-  if(nomEl) nomEl.textContent = ev ? (ev.nom + (ev.date?' · '+fmtDate(ev.date):'')) : '';
-  document.getElementById('modal-choix-mode').style.display = 'flex';
-};
-
-// confirmerMode déplacé dans script principal
-
-
-function ouvrirRepas() {
-  document.getElementById('page-repas-full').style.display = 'block';
-  afficherRepas();
-}
-
-function fermerRepas() {
-  document.getElementById('page-repas-full').style.display = 'none';
-  modeActuel = 'entree';
-}
-
-function afficherRepas() {
-  if(!currentEventId) return;
-  var q = (document.getElementById('repas-search').value||'').toLowerCase().trim();
-  var liste = invitations.filter(function(i){ return i.evenement_id===currentEventId; }).map(function(inv){
-    var u = users.find(function(u){ return u.id===inv.user_id; });
-    var p = presences.find(function(p){ return p.evenement_id===currentEventId && p.user_id===inv.user_id; });
-    var r = repas.find(function(r){ return r.evenement_id===currentEventId && r.user_id===inv.user_id; });
-    if(!u || !p || !p.present) return null; // Seulement les présents
-    return {id:u.id, nom:u.nom, prenom:u.prenom, dept:u.departement||'', mat:u.matricule||'', servi:!!r};
-  }).filter(Boolean);
-  var filtered = q ? liste.filter(function(r){ return (r.nom+' '+r.prenom).toLowerCase().indexOf(q)>=0; }) : liste;
-  var nbServis = repas.filter(function(r){ return r.evenement_id===currentEventId; }).length;
-  var cpt = document.getElementById('repas-cpt');
-  if(cpt) cpt.textContent = nbServis+'/'+liste.length;
-  var html = '';
-  if(!filtered.length) {
-    html = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🍽️</div><div>Aucun invité présent.<br><small style="color:var(--muted)">Seuls les invités marqués présents apparaissent ici.</small></div></div>';
-  } else {
-    filtered.forEach(function(r){
-      var meta = [r.dept,r.mat].filter(Boolean).join(' · ')||'—';
-      html += '<div class="pointage-card '+(r.servi?'is-present':'')+'">';
-      html += '<div><div class="p-name">'+esc(r.nom)+' '+esc(r.prenom)+'</div>';
-      html += '<div class="p-meta">'+meta+'</div>';
-      if(r.servi) html += '<div class="p-arrive">🍽️ Repas servi</div>';
-      html += '</div>';
-      html += r.servi
-        ? '<span class="badge badge-present">✅ Servi</span>'
-        : '<button class="btn-toggle absent" onclick="servirRepas(''+r.id+'')">🍽️ Servir</button>';
-      html += '</div>';
-    });
-  }
-  document.getElementById('repas-grid').innerHTML = html;
-}
-
-function filtrerRepas() { afficherRepas(); }
-
-async function servirRepas(userId) {
-  if(!currentEventId) return;
-  var deja = repas.find(function(r){ return r.evenement_id===currentEventId && r.user_id===userId; });
-  if(deja) {
-    var u = users.find(function(u){ return u.id===userId; });
-    showScanPopup('🍽️','error', u?u.nom+' '+u.prenom:'?', 'Repas déjà pris — refusé !');
-    playSound('error');
-    return;
-  }
-  try {
-    var pp = currentPointeur ? currentPointeur.display : '—';
-    var res = await fetch(api('repas'),{method:'POST',headers:H(),body:JSON.stringify({user_id:userId,evenement_id:currentEventId,pointe_par:pp})});
-    if(!res.ok) throw new Error((await res.json()).message);
-    var nr = await res.json();
-    repas.push(Array.isArray(nr)?nr[0]:nr);
-    var u = users.find(function(u){ return u.id===userId; });
-    var ev = events.find(function(e){ return e.id===currentEventId; });
-    await logHistorique('REPAS', pp, u?u.nom+' '+u.prenom:'?', ev?ev.nom:'—', 'Repas servi');
-    afficherRepas();
-    showScanPopup('🍽️','success', u?u.nom+' '+u.prenom:'?', '✅ Repas validé !');
-    playSound('success');
-  } catch(e){ toast('Erreur : '+e.message,'error'); }
-}
-</script>
 <!-- MODAL CHOIX MODE -->
 <div id="modal-choix-mode" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:340px;max-width:93vw">
