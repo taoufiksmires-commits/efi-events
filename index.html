@@ -759,7 +759,7 @@ td{padding:10px 12px;color:var(--text)}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.73
+        v1.8.74
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1097,8 +1097,9 @@ function confirmerMode(mode){
   if(modeRepas){
     currentEventId=pendingEId;
     document.getElementById('page-repas-full').style.display='block';
-    afficherRepas();
-    setTimeout(showNFCModal,400);
+    // Recharger repas depuis la base pour éviter les doublons
+    fetch(api('repas')+'?order=created_at.desc',{headers:H()}).then(function(r){return r.json();}).then(function(d){if(Array.isArray(d)) repas=d; afficherRepas();});
+    setTimeout(function(){ var btn=document.getElementById('nfc-btn'); if(btn&&btn.style.display!=='none') startNFC(); },600);
   } else {
     selectEvent(pendingEId);
   }
@@ -1161,19 +1162,26 @@ async function annulerRepas(uid){
 }
 
 async function servirRepas(uid){
-  var deja=repas.find(function(x){return x.evenement_id===currentEventId&&x.user_id===uid;});
-  if(deja){
-    var u=users.find(function(x){return x.id===uid;});
-    showScanPopup('🍽️','error',u?u.nom+' '+u.prenom:'?','Repas déjà pris !');
-    playSound('error'); return;
-  }
+  var u=users.find(function(x){return x.id===uid;});
+  // Vérifier en base (pas seulement en mémoire)
   try{
+    var chk=await fetch(api('repas')+'?user_id=eq.'+uid+'&evenement_id=eq.'+currentEventId,{headers:H()});
+    var existing=await chk.json();
+    if(existing&&existing.length>0){
+      // Synchroniser la mémoire
+      if(!repas.find(function(x){return x.user_id===uid&&x.evenement_id===currentEventId;})){
+        repas.push(existing[0]);
+      }
+      showScanPopup('🍽️','error',u?u.nom+' '+u.prenom:'?','Repas déjà pris !');
+      playSound('error');
+      afficherRepas();
+      return;
+    }
     var pp=currentPointeur?currentPointeur.display:'—';
     var ro=await fetch(api('repas'),{method:'POST',headers:H(),body:JSON.stringify({user_id:uid,evenement_id:currentEventId,pointe_par:pp})});
     if(!ro.ok) throw new Error((await ro.json()).message);
     var nr=await ro.json();
     repas.push(Array.isArray(nr)?nr[0]:nr);
-    var u=users.find(function(x){return x.id===uid;});
     var ev=events.find(function(x){return x.id===currentEventId;});
     await logHistorique('REPAS',pp,u?u.nom+' '+u.prenom:'?',ev?ev.nom:'—','Repas servi');
     afficherRepas();
