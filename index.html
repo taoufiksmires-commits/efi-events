@@ -776,7 +776,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.85
+        v1.8.86
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -800,6 +800,8 @@ svg{display:block;flex-shrink:0}
           </table>
         </div>
       </div>
+      <!-- Cartes détaillées par événement -->
+      <div id="dash-event-cards" style="margin-top:16px;display:flex;flex-direction:column;gap:12px"></div>
     </div>
 
     <!-- EVENEMENTS -->
@@ -1930,6 +1932,7 @@ function renderDashboard(){
   document.getElementById('d-taux').textContent=totalInv?Math.round(totalPres/totalInv*100)+'%':'—';
   const tbody=document.getElementById('dash-events-body');
   if(!events.length){tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📅</div><div>Aucun événement</div></div></td></tr>`;return;}
+  renderDashboardCards();
   tbody.innerHTML=events.slice(0,8).map(ev=>{
     const evInv=invitations.filter(i=>i.evenement_id===ev.id).length;
     const evPres=presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
@@ -1940,6 +1943,78 @@ function renderDashboard(){
       <td><span class="badge badge-present">${evPres}/${evInv}</span></td>
     </tr>`;
   }).join('');
+}
+
+// DASHBOARD CARDS
+function renderDashboardCards(){
+  const container=document.getElementById('dash-event-cards');
+  if(!container||!events.length) return;
+  const lines=[];
+  events.slice(0,8).forEach(function(ev){
+    const evInv=invitations.filter(function(i){return i.evenement_id===ev.id;}).length;
+    const evPres=presences.filter(function(p){return p.evenement_id===ev.id&&p.present;}).length;
+    const evRepas=repas.filter(function(r){return r.evenement_id===ev.id;}).length;
+    const evTomb=tombola.filter(function(t){return t.evenement_id===ev.id;}).length;
+    const tauxPres=evInv?Math.round(evPres/evInv*100):0;
+    const tauxRepas=evPres?Math.round(evRepas/evPres*100):0;
+
+    // Ligne parkings
+    var pkHtml='';
+    parkings.filter(function(pk){return pk.actif;}).forEach(function(pk){
+      var session=parkingSessions.find(function(s){return s.parking_id===pk.id&&s.evenement_id===ev.id;});
+      var init=session?session.voitures_init:0;
+      var badges=presences.filter(function(p){return p.evenement_id===ev.id&&p.present&&p.parking_id===pk.id;}).length;
+      var total=init+badges;
+      var pct=Math.min(100,Math.round(total/pk.capacite*100));
+      var color=pct>=95?'var(--danger)':pct>=70?'var(--accent2)':'var(--success)';
+      pkHtml+='<div style="margin-bottom:5px">';
+      pkHtml+='<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">';
+      pkHtml+='<span style="color:var(--muted)">'+esc(pk.nom)+'</span>';
+      pkHtml+='<span style="font-weight:600;color:'+color+'">'+total+'/'+pk.capacite+'</span></div>';
+      pkHtml+='<div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden">';
+      pkHtml+='<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:2px"></div></div></div>';
+    });
+
+    var card='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">';
+    // Header
+    card+='<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">';
+    card+='<div style="flex:1"><div style="font-weight:700;font-size:14px">'+esc(ev.nom)+'</div>';
+    card+='<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(ev.date?fmtDate(ev.date):'')+(ev.lieu?' · '+esc(ev.lieu):'')+'</div></div>';
+    card+='<button class="btn btn-primary btn-sm" onclick="demanderMode(''+ev.id+'')">Pointer</button></div>';
+    // Body
+    card+='<div style="padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+    // Col gauche
+    card+='<div>';
+    // Présences
+    card+='<div style="margin-bottom:12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Entrées</div>';
+    card+='<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px">';
+    card+='<span style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--success);line-height:1">'+evPres+'</span>';
+    card+='<span style="font-size:11px;color:var(--muted)">/ '+evInv+'</span></div>';
+    card+='<div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden">';
+    card+='<div style="width:'+tauxPres+'%;height:100%;background:var(--success);border-radius:2px"></div></div>';
+    card+='<div style="font-size:10px;color:var(--muted);margin-top:3px">'+tauxPres+'% présents</div></div>';
+    // Repas
+    card+='<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Repas</div>';
+    card+='<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px">';
+    card+='<span style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--accent2);line-height:1">'+evRepas+'</span>';
+    card+='<span style="font-size:11px;color:var(--muted)">/ '+evPres+'</span></div>';
+    card+='<div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden">';
+    card+='<div style="width:'+tauxRepas+'%;height:100%;background:var(--accent2);border-radius:2px"></div></div>';
+    card+='<div style="font-size:10px;color:var(--muted);margin-top:3px">'+tauxRepas+'% servis</div></div>';
+    card+='</div>';
+    // Col droite - parkings + tombola
+    card+='<div>';
+    card+='<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Parkings</div>';
+    card+=(pkHtml||'<div style="font-size:11px;color:var(--muted)">—</div>');
+    if(evTomb){
+      card+='<div style="margin-top:8px;background:rgba(232,37,26,.08);border:1px solid rgba(232,37,26,.2);border-radius:6px;padding:7px;text-align:center">';
+      card+='<div style="font-size:9px;color:var(--muted);margin-bottom:1px">Tombola</div>';
+      card+='<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--accent)">'+evTomb+' gagnant'+(evTomb>1?'s':'')+'</div></div>';
+    }
+    card+='</div></div></div>';
+    lines.push(card);
+  });
+  container.innerHTML=lines.join('');
 }
 
 // EVENTS
