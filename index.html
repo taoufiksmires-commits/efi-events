@@ -776,7 +776,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.84
+        v1.8.85
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -785,16 +785,21 @@ svg{display:block;flex-shrink:0}
 
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
-      <!-- Stats globales -->
-      <div class="stats-bar" id="d-global-stats">
+      <div class="stats-bar">
         <div class="stat-card"><div class="stat-label">Événements</div><div class="stat-value blue" id="d-events">—</div></div>
         <div class="stat-card"><div class="stat-label">Salariés</div><div class="stat-value" id="d-users">—</div></div>
         <div class="stat-card"><div class="stat-label">Présences totales</div><div class="stat-value green" id="d-pres">—</div></div>
         <div class="stat-card"><div class="stat-label">Taux moyen</div><div class="stat-value" id="d-taux">—</div></div>
       </div>
-
-      <!-- Cartes par événement -->
-      <div id="dash-event-cards" style="display:flex;flex-direction:column;gap:14px"></div>
+      <div class="card card-accent">
+        <div class="card-header"><div class="card-title">📅 Événements récents</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Événement</th><th></th><th>Date</th><th>Présents</th></tr></thead>
+            <tbody id="dash-events-body"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- EVENEMENTS -->
@@ -1923,89 +1928,17 @@ function renderDashboard(){
   document.getElementById('d-users').textContent=users.length;
   document.getElementById('d-pres').textContent=totalPres;
   document.getElementById('d-taux').textContent=totalInv?Math.round(totalPres/totalInv*100)+'%':'—';
-
-  const container=document.getElementById('dash-event-cards');
-  if(!container) return;
-  if(!events.length){
-    container.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><div>Aucun événement</div></div>';
-    return;
-  }
-
-  container.innerHTML=events.slice(0,10).map(ev=>{
+  const tbody=document.getElementById('dash-events-body');
+  if(!events.length){tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📅</div><div>Aucun événement</div></div></td></tr>`;return;}
+  tbody.innerHTML=events.slice(0,8).map(ev=>{
     const evInv=invitations.filter(i=>i.evenement_id===ev.id).length;
     const evPres=presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
-    const evRepas=repas.filter(r=>r.evenement_id===ev.id).length;
-    const evTombola=tombola.filter(t=>t.evenement_id===ev.id).length;
-    const tauxPres=evInv?Math.round(evPres/evInv*100):0;
-    const tauxRepas=evPres?Math.round(evRepas/evPres*100):0;
-
-    // Parkings pour cet événement
-    const pkSessions=parkingSessions.filter(s=>s.evenement_id===ev.id);
-    const pkLines=parkings.filter(pk=>pk.actif).map(pk=>{
-      const session=pkSessions.find(s=>s.parking_id===pk.id);
-      const init=session?session.voitures_init:0;
-      const badges=presences.filter(p=>p.evenement_id===ev.id&&p.present&&p.parking_id===pk.id).length;
-      const total=init+badges;
-      const pct=Math.min(100,Math.round(total/pk.capacite*100));
-      const color=pct>=95?'var(--danger)':pct>=70?'var(--accent2)':'var(--success)';
-      return '<div style="margin-bottom:6px">'
-        +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">'
-        +'<span style="color:var(--muted)">'+esc(pk.nom)+'</span>'
-        +'<span style="font-weight:600;color:'+color+'">'+total+'/'+pk.capacite+'</span></div>'
-        +'<div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden">'
-        +'<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:2px;transition:width .5s"></div>'
-        +'</div></div>';
-    }).join('');
-
-    const imgHtml=ev.image_url
-      ?'<img src="'+ev.image_url+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0" onerror="this.style.display='none'">'
-      :'<div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,rgba(232,37,26,.2),rgba(232,37,26,.05));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">📅</div>';
-
-    return '<div class="card card-accent" style="padding:0;overflow:hidden">'
-      // Header événement
-      +'<div style="padding:16px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)">'
-      +imgHtml
-      +'<div style="flex:1;min-width:0">'
-      +'<div style="font-weight:700;font-size:15px;margin-bottom:2px">'+esc(ev.nom)+'</div>'
-      +'<div style="font-size:11px;color:var(--muted)">'+(ev.date?fmtDate(ev.date):'')+(ev.lieu?' · '+esc(ev.lieu):'')+'</div>'
-      +'</div>'
-      +'<button class="btn btn-primary btn-sm btn-pulse" onclick="demanderMode(''+ev.id+'')" style="flex-shrink:0">Pointer</button>'
-      +'</div>'
-      // Corps stats
-      +'<div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:16px">'
-      // Colonne gauche : présences + repas
-      +'<div>'
-      +'<div style="margin-bottom:14px">'
-      +'<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Présences</div>'
-      +'<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">'
-      +'<span style="font-family:Bebas Neue,sans-serif;font-size:36px;color:var(--success);line-height:1">'+evPres+'</span>'
-      +'<span style="font-size:13px;color:var(--muted)">/ '+evInv+' invités</span>'
-      +'</div>'
-      +'<div style="height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">'
-      +'<div style="width:'+tauxPres+'%;height:100%;background:var(--success);border-radius:3px;transition:width .5s"></div>'
-      +'</div>'
-      +'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+tauxPres+'% de taux de présence</div>'
-      +'</div>'
-      +'<div>'
-      +'<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Repas</div>'
-      +'<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">'
-      +'<span style="font-family:Bebas Neue,sans-serif;font-size:36px;color:var(--accent2);line-height:1">'+evRepas+'</span>'
-      +'<span style="font-size:13px;color:var(--muted)">/ '+evPres+' présents</span>'
-      +'</div>'
-      +'<div style="height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">'
-      +'<div style="width:'+tauxRepas+'%;height:100%;background:var(--accent2);border-radius:3px;transition:width .5s"></div>'
-      +'</div>'
-      +'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+tauxRepas+'% ont mangé</div>'
-      +'</div>'
-      +'</div>'
-      // Colonne droite : parkings
-      +'<div>'
-      +'<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Parkings</div>'
-      +(pkLines||'<div style="font-size:11px;color:var(--muted)">Aucun parking configuré</div>')
-      +(evTombola?'<div style="margin-top:10px;background:rgba(232,37,26,.08);border:1px solid rgba(232,37,26,.2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Tombola</div><div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--accent)">'+evTombola+' gagnant'+(evTombola>1?'s':'')+'</div></div>':'')
-      +'</div>'
-      +'</div>'
-      +'</div>';
+    return`<tr>
+      <td><strong>${esc(ev.nom)}</strong></td>
+      <td><button class="btn btn-primary btn-sm btn-pulse" onclick="demanderMode('${ev.id}')">🎯 Pointer</button></td>
+      <td class="mono">${ev.date?fmtDate(ev.date):'—'}</td>
+      <td><span class="badge badge-present">${evPres}/${evInv}</span></td>
+    </tr>`;
   }).join('');
 }
 
