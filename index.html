@@ -754,7 +754,7 @@ svg{display:block;flex-shrink:0}
     <div class="aside-section">Navigation</div>
     <div class="aside-item active" onclick="goPage('dashboard',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></span> Dashboard</div>
     <div class="aside-item" onclick="goPage('evenements',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span> Événements</div>
-    <div class="aside-item" onclick="clicPointageNav(this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span> Pointage</div>
+    <div class="aside-item" onclick="mobileNav('pointage',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span> Pointage</div>
     <div class="aside-item" onclick="goPage('users',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="9" cy="7" r="3"/><path d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6"/><circle cx="17" cy="8" r="2.5"/><path d="M21 20c0-2.761-1.791-5-4-5"/></svg></span> Salariés</div>
     <div class="aside-item" onclick="goPage('export',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span> Export</div>
     <div class="aside-item" onclick="goPage('historique',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span> Historique</div>
@@ -776,7 +776,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.92
+        v1.8.93
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1197,39 +1197,15 @@ const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-
 
 let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[], repas=[], tombola=[];
 
-function clicPointageNav(el){
-  // Si un événement est déjà sélectionné, proposer le choix mode
-  if(currentEventId){
-    pendingEId=currentEventId;
-    var ev=events.find(function(e){return e.id===currentEventId;});
-    var nomEl=document.getElementById('choix-event-nom');
-    if(nomEl&&ev) nomEl.textContent=ev.nom+(ev.date?' · '+fmtDate(ev.date):'');
-    document.getElementById('modal-choix-mode').style.display='flex';
-  } else {
-    // Sinon naviguer normalement vers le picker d'événement
-    mobileNav('pointage',el);
-  }
-}
-
-function demanderMode(eid){ selectEvent(eid); }
 
 
 
 
 
-function ouvrirPageParking(pkId){
-  if(!pkId) pkId=currentParkingId;
-  if(!pkId||!currentEventId) return;
-  // Pré-remplir les selects de la page parking
-  var psel=document.getElementById('pp-parking-sel');
-  var esel=document.getElementById('pp-event-sel');
-  if(psel) psel.value=pkId;
-  if(esel) esel.value=currentEventId;
-  // Naviguer vers la page parking
-  navigateTo('parking-pointeur');
-  initParkingPointeurPage();
-  setTimeout(majCompteurParking, 200);
-}
+
+
+
+
 
 function fermerPageParking(){
   // Retour au pointage normal
@@ -1889,7 +1865,7 @@ function renderDashboard(){
     const evPres=presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
     return`<tr>
       <td><strong>${esc(ev.nom)}</strong></td>
-      <td><button class="btn btn-primary btn-sm btn-pulse" onclick="demanderMode('${ev.id}')">🎯 Pointer</button></td>
+      <td><button class="btn btn-primary btn-sm btn-pulse" onclick="selectEvent('${ev.id}')">🎯 Pointer</button></td>
       <td class="mono">${ev.date?fmtDate(ev.date):'—'}</td>
       <td><span class="badge badge-present">${evPres}/${evInv}</span></td>
     </tr>`;
@@ -1919,7 +1895,7 @@ function renderEvents(){
           ${ev.description?`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">📝 ${esc(ev.description)}</span>`:''}
         </div>
         <div class="event-actions">
-          <button class="btn btn-primary btn-sm btn-pulse" onclick="demanderMode('${ev.id}')">🎯 Pointer</button>
+          <button class="btn btn-primary btn-sm btn-pulse" onclick="selectEvent('${ev.id}')">🎯 Pointer</button>
           <button class="btn btn-ghost btn-sm" onclick="openInviteModal('${ev.id}')">👥 (${evInv})</button>
           ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openEventModal('${ev.id}')">✏️ Modifier</button>`:''}
           ${isAdmin()?`<button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">🗑</button>`:''}
@@ -3397,7 +3373,7 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
     <button class="mobile-nav-item" onclick="mobileNav('evenements',this)">
       <span class="mn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><span>Événements</span>
     </button>
-    <button class="mobile-nav-item" onclick="clicPointageNav(this)">
+    <button class="mobile-nav-item" onclick="mobileNav('pointage',this)">
       <span class="mn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><span>Pointage</span>
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('users',this)">
@@ -4199,7 +4175,7 @@ svg{display:block;flex-shrink:0}
     <div class="aside-section">Navigation</div>
     <div class="aside-item active" onclick="goPage('dashboard',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg></span> Dashboard</div>
     <div class="aside-item" onclick="goPage('evenements',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span> Événements</div>
-    <div class="aside-item" onclick="clicPointageNav(this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span> Pointage</div>
+    <div class="aside-item" onclick="mobileNav('pointage',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span> Pointage</div>
     <div class="aside-item" onclick="goPage('users',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="9" cy="7" r="3"/><path d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6"/><circle cx="17" cy="8" r="2.5"/><path d="M21 20c0-2.761-1.791-5-4-5"/></svg></span> Salariés</div>
     <div class="aside-item" onclick="goPage('export',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span> Export</div>
     <div class="aside-item" onclick="goPage('historique',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span> Historique</div>
@@ -4642,39 +4618,15 @@ const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-
 
 let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[], repas=[], tombola=[];
 
-function clicPointageNav(el){
-  // Si un événement est déjà sélectionné, proposer le choix mode
-  if(currentEventId){
-    pendingEId=currentEventId;
-    var ev=events.find(function(e){return e.id===currentEventId;});
-    var nomEl=document.getElementById('choix-event-nom');
-    if(nomEl&&ev) nomEl.textContent=ev.nom+(ev.date?' · '+fmtDate(ev.date):'');
-    document.getElementById('modal-choix-mode').style.display='flex';
-  } else {
-    // Sinon naviguer normalement vers le picker d'événement
-    mobileNav('pointage',el);
-  }
-}
-
-function demanderMode(eid){ selectEvent(eid); }
 
 
 
 
 
-function ouvrirPageParking(pkId){
-  if(!pkId) pkId=currentParkingId;
-  if(!pkId||!currentEventId) return;
-  // Pré-remplir les selects de la page parking
-  var psel=document.getElementById('pp-parking-sel');
-  var esel=document.getElementById('pp-event-sel');
-  if(psel) psel.value=pkId;
-  if(esel) esel.value=currentEventId;
-  // Naviguer vers la page parking
-  navigateTo('parking-pointeur');
-  initParkingPointeurPage();
-  setTimeout(majCompteurParking, 200);
-}
+
+
+
+
 
 function fermerPageParking(){
   // Retour au pointage normal
@@ -5334,7 +5286,7 @@ function renderDashboard(){
     const evPres=presences.filter(p=>p.evenement_id===ev.id&&p.present).length;
     return`<tr>
       <td><strong>${esc(ev.nom)}</strong></td>
-      <td><button class="btn btn-primary btn-sm btn-pulse" onclick="demanderMode('${ev.id}')">🎯 Pointer</button></td>
+      <td><button class="btn btn-primary btn-sm btn-pulse" onclick="selectEvent('${ev.id}')">🎯 Pointer</button></td>
       <td class="mono">${ev.date?fmtDate(ev.date):'—'}</td>
       <td><span class="badge badge-present">${evPres}/${evInv}</span></td>
     </tr>`;
@@ -5364,7 +5316,7 @@ function renderEvents(){
           ${ev.description?`<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">📝 ${esc(ev.description)}</span>`:''}
         </div>
         <div class="event-actions">
-          <button class="btn btn-primary btn-sm btn-pulse" onclick="demanderMode('${ev.id}')">🎯 Pointer</button>
+          <button class="btn btn-primary btn-sm btn-pulse" onclick="selectEvent('${ev.id}')">🎯 Pointer</button>
           <button class="btn btn-ghost btn-sm" onclick="openInviteModal('${ev.id}')">👥 (${evInv})</button>
           ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openEventModal('${ev.id}')">✏️ Modifier</button>`:''}
           ${isAdmin()?`<button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">🗑</button>`:''}
@@ -6842,7 +6794,7 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
     <button class="mobile-nav-item" onclick="mobileNav('evenements',this)">
       <span class="mn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><span>Événements</span>
     </button>
-    <button class="mobile-nav-item" onclick="clicPointageNav(this)">
+    <button class="mobile-nav-item" onclick="mobileNav('pointage',this)">
       <span class="mn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><span>Pointage</span>
     </button>
     <button class="mobile-nav-item" onclick="mobileNav('users',this)">
