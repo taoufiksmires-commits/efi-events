@@ -776,7 +776,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.89
+        v1.8.90
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1063,6 +1063,12 @@ svg{display:block;flex-shrink:0}
     <!-- PAGE PARKING POINTEUR -->
     <div class="page" id="page-parking-pointeur">
       <div style="max-width:480px;margin:0 auto;padding:20px 0">
+        <!-- Bouton retour -->
+        <div style="margin-bottom:16px">
+          <button onclick="fermerPageParking()" style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 14px;cursor:pointer;font-size:13px">
+            ← Changer de poste
+          </button>
+        </div>
         <!-- Sélecteur parking -->
         <div style="margin-bottom:20px">
           <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px">Votre parking</label>
@@ -1266,6 +1272,26 @@ function activerNFCRepas(){
     toast('NFC : '+err.message,'error');
     if(btn){btn.textContent='📡 NFC';btn.disabled=false;}
   });
+}
+
+function ouvrirPageParking(pkId){
+  if(!pkId) pkId=currentParkingId;
+  if(!pkId||!currentEventId) return;
+  // Pré-remplir les selects de la page parking
+  var psel=document.getElementById('pp-parking-sel');
+  var esel=document.getElementById('pp-event-sel');
+  if(psel) psel.value=pkId;
+  if(esel) esel.value=currentEventId;
+  // Naviguer vers la page parking
+  navigateTo('parking-pointeur');
+  initParkingPointeurPage();
+  setTimeout(majCompteurParking, 200);
+}
+
+function fermerPageParking(){
+  // Retour au pointage normal
+  navigateTo('pointage');
+  ouvrirModalParking();
 }
 
 function fermerRepas(){
@@ -1808,23 +1834,23 @@ let pendingParkingId = null;
 async function choisirParking(parkingId) {
   closeModal('modal-parking');
   if(!parkingId) {
+    // Entrée principale -> pointage normal
     currentParkingId = null;
     updateParkingBar();
+    setTimeout(showNFCModal, 200);
     return;
   }
-  // Chercher session existante en base
+  // Parking choisi -> page parking +/-
+  currentParkingId = parkingId;
   const session = parkingSessions.find(s=>s.parking_id===parkingId && s.evenement_id===currentEventId);
   if(!session) {
-    // Pas de session → premier pointeur, demander init
     pendingParkingId = parkingId;
     const pk = parkings.find(p=>p.id===parkingId);
-    document.getElementById('init-parking-nom').textContent = pk ? '🅿️ '+pk.nom : 'Parking';
+    document.getElementById('init-parking-nom').textContent = pk ? pk.nom : 'Parking';
     document.getElementById('init-voitures-nb').value = '0';
     document.getElementById('modal-init-voitures').classList.add('show');
   } else {
-    // Session existante → utiliser directement
-    currentParkingId = parkingId;
-    updateParkingBar();
+    ouvrirPageParking(parkingId);
   }
 }
 
@@ -1833,7 +1859,6 @@ async function confirmerInitVoitures() {
   closeModal('modal-init-voitures');
   showLoading('Initialisation du parking...');
   try {
-    // Sauvegarder en base
     const payload = {parking_id: pendingParkingId, evenement_id: currentEventId, voitures_init: nb};
     const res = await fetch(api('parking_sessions'), {method:'POST', headers:H(), body:JSON.stringify(payload)});
     if(!res.ok) throw new Error((await res.json()).message);
@@ -1841,8 +1866,8 @@ async function confirmerInitVoitures() {
     parkingSessions.push(Array.isArray(ns)?ns[0]:ns);
     currentParkingId = pendingParkingId;
     pendingParkingId = null;
-    updateParkingBar();
-    toast(`🅿️ Parking initialisé avec ${nb} voiture(s)`, 'info');
+    ouvrirPageParking(currentParkingId);
+    toast('Parking initialisé avec '+nb+' voiture(s)', 'info');
   } catch(e) {
     toast('Erreur init parking : '+e.message, 'error');
   } finally { hideLoading(); }
