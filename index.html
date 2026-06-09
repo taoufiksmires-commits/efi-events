@@ -326,7 +326,8 @@ svg{display:block;flex-shrink:0}
 #repas-search,
 #repas-cpt,
 #repas-grid,
-#nfc-repas-btn { display:none !important; }
+#nfc-repas-btn,
+#modal-choix-mode button[onclick="confirmerMode('repas')"] { display:none !important; }
 </style>
 </head>
 <body>
@@ -783,7 +784,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.98
+        v1.8.99
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1284,15 +1285,15 @@ function activerNFCRepas(){
 function ouvrirPageParking(pkId){
   if(!pkId) pkId=currentParkingId;
   if(!pkId||!currentEventId) return;
-  // Pré-remplir les selects de la page parking
+  // Naviguer puis initialiser les selects
+  navigateTo('parking-pointeur');
+  initParkingPointeurPage();
+  // Pré-remplir APRÈS init (sinon les valeurs sont écrasées)
   var psel=document.getElementById('pp-parking-sel');
   var esel=document.getElementById('pp-event-sel');
   if(psel) psel.value=pkId;
   if(esel) esel.value=currentEventId;
-  // Naviguer vers la page parking
-  navigateTo('parking-pointeur');
-  initParkingPointeurPage();
-  setTimeout(majCompteurParking, 200);
+  changerParkingPointeur();
 }
 
 function fermerPageParking(){
