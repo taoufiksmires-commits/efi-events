@@ -776,7 +776,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.94
+        v1.8.95
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1992,12 +1992,8 @@ function selectEvent(id){
   setTimeout(() => {
     var mode = window._modeEnAttente || 'entree';
     window._modeEnAttente = null;
-    if(mode === 'repas') {
-      ouvrirRepas();
-    } else {
-      if(parkings.length > 0) { ouvrirModalParking(); }
-      else { setTimeout(showNFCModal, 400); }
-    }
+    if(parkings.length > 0) { ouvrirModalParking(); }
+    else { setTimeout(showNFCModal, 400); }
   }, 400);
 }
 
@@ -2982,8 +2978,7 @@ function demanderMode(eventId) {
   var ev = events.find(function(e){ return e.id===eventId; });
   var nomEl = document.getElementById('choix-event-nom');
   if(nomEl && ev) nomEl.textContent = ev.nom + (ev.date?' · '+fmtDate(ev.date):'');
-  var modal = document.getElementById('modal-choix-mode');
-  if(modal) modal.style.display = 'flex';
+  selectEvent(eid);
 }
 
 
@@ -5401,12 +5396,8 @@ function selectEvent(id){
   setTimeout(() => {
     var mode = window._modeEnAttente || 'entree';
     window._modeEnAttente = null;
-    if(mode === 'repas') {
-      ouvrirRepas();
-    } else {
-      if(parkings.length > 0) { ouvrirModalParking(); }
-      else { setTimeout(showNFCModal, 400); }
-    }
+    if(parkings.length > 0) { ouvrirModalParking(); }
+    else { setTimeout(showNFCModal, 400); }
   }, 400);
 }
 
@@ -6391,8 +6382,7 @@ function demanderMode(eventId) {
   var ev = events.find(function(e){ return e.id===eventId; });
   var nomEl = document.getElementById('choix-event-nom');
   if(nomEl && ev) nomEl.textContent = ev.nom + (ev.date?' · '+fmtDate(ev.date):'');
-  var modal = document.getElementById('modal-choix-mode');
-  if(modal) modal.style.display = 'flex';
+  selectEvent(eid);
 }
 
 
