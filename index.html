@@ -776,7 +776,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.88
+        v1.8.89
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1060,6 +1060,63 @@ svg{display:block;flex-shrink:0}
       </div>
     </div>
 
+    <!-- PAGE PARKING POINTEUR -->
+    <div class="page" id="page-parking-pointeur">
+      <div style="max-width:480px;margin:0 auto;padding:20px 0">
+        <!-- Sélecteur parking -->
+        <div style="margin-bottom:20px">
+          <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px">Votre parking</label>
+          <select id="pp-parking-sel" onchange="changerParkingPointeur()" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-weight:600">
+            <option value="">Sélectionner un parking...</option>
+          </select>
+        </div>
+        <!-- Sélecteur événement -->
+        <div style="margin-bottom:24px">
+          <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px">Événement</label>
+          <select id="pp-event-sel" onchange="changerParkingPointeur()" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-weight:600">
+            <option value="">Sélectionner un événement...</option>
+          </select>
+        </div>
+        <!-- Compteur principal -->
+        <div id="pp-compteur" style="display:none">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;text-align:center;margin-bottom:16px">
+            <div style="font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:4px">Voitures présentes</div>
+            <div id="pp-total" style="font-family:Bebas Neue,sans-serif;font-size:96px;line-height:1;color:var(--text)">0</div>
+            <div id="pp-capacite" style="font-size:13px;color:var(--muted);margin-bottom:16px">/ 100 places</div>
+            <!-- Jauge -->
+            <div style="height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-bottom:8px">
+              <div id="pp-jauge" style="height:100%;border-radius:4px;transition:all .3s;width:0%"></div>
+            </div>
+            <div id="pp-statut" style="font-size:13px;font-weight:600"></div>
+          </div>
+          <!-- Boutons +/- -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <button onclick="ajusterParking(-1)" style="
+              padding:28px;border-radius:14px;border:2px solid var(--border);
+              background:rgba(255,255,255,.04);color:var(--text);
+              font-size:48px;font-weight:300;cursor:pointer;
+              transition:all .15s;line-height:1">−</button>
+            <button onclick="ajusterParking(1)" style="
+              padding:28px;border-radius:14px;border:2px solid var(--accent);
+              background:rgba(232,37,26,.1);color:var(--accent);
+              font-size:48px;font-weight:300;cursor:pointer;
+              transition:all .15s;line-height:1">+</button>
+          </div>
+          <!-- Init voitures déjà présentes -->
+          <div id="pp-init-zone" style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Voitures déjà présentes au démarrage</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="pp-init-val" min="0" value="0" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;text-align:center">
+              <button onclick="sauvegarderInitParking()" class="btn btn-primary" style="padding:10px 16px;white-space:nowrap">Enregistrer</button>
+            </div>
+          </div>
+        </div>
+        <div id="pp-empty" style="text-align:center;padding:40px;color:var(--muted);font-size:13px">
+          Sélectionnez un parking et un événement pour commencer
+        </div>
+      </div>
+    </div>
+
     <!-- TOMBOLA -->
     <div class="page" id="page-tombola">
       <div class="card card-accent" style="max-width:600px;margin:0 auto">
@@ -1337,6 +1394,9 @@ window.onload = () => {
       currentPointeur = JSON.parse(saved);
       if(currentPointeur.role === 'en_attente') {
         showPending();
+      } else if(currentPointeur.role === 'pointeur_parking') {
+        showApp();
+        setTimeout(function(){navigateTo('parking-pointeur');initParkingPointeurPage();},300);
       } else {
         showApp();
       }
@@ -1702,7 +1762,7 @@ async function silentRefresh() {
     users=Array.isArray(u)?u:[];events=Array.isArray(e)?e:[];
     presences=Array.isArray(p)?p:[];invitations=Array.isArray(inv)?inv:[];
     pointeurs=Array.isArray(pt)?pt:[];
-    if(changed) { refreshAll(); updateParkingBar(); }
+    if(changed) { refreshAll(); updateParkingBar(); if(currentPointeur&&currentPointeur.role==='pointeur_parking') majCompteurParking(); }
     const el=document.getElementById('sync-time');
     if(el){const n=new Date();el.textContent=n.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
   } catch{}
@@ -1909,12 +1969,13 @@ function navigateTo(name, pushState=true) {
   // Sync bottom nav
   const navItems = document.querySelectorAll('.mobile-nav-item');
   if(idx>=0 && navItems[idx]) navItems[idx].classList.add('active');
-  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte',historique:'Historique',parkings:'Parkings',tombola:'🎰 Tombola'};
+  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte',historique:'Historique',parkings:'Parkings',tombola:'🎰 Tombola','parking-pointeur':'Parking'};
   document.getElementById('top-title').innerHTML=`<span>${titles[name]||name}</span>`;
   if(name==='moncompte') renderMonCompte();
   if(name==='historique') loadHistorique();
   if(name==='parkings') renderParkings();
   if(name==='tombola') initTombolaPage();
+  if(name==='parking-pointeur') initParkingPointeurPage();
   if(name==='evenements'||name==='dashboard') { renderEvents(); renderDashboard(); }
   // Pousser dans l'historique
   if(pushState) history.pushState({page: name}, '', '#'+name);
@@ -3318,6 +3379,122 @@ function renderDashboardCards(){
     lines.push(c);
   });
   container.innerHTML=lines.join('');
+}
+
+// ── PARKING POINTEUR ─────────────────────────────────────────
+function initParkingPointeurPage(){
+  var psel=document.getElementById('pp-parking-sel');
+  var esel=document.getElementById('pp-event-sel');
+  if(!psel||!esel) return;
+  psel.innerHTML='<option value="">Sélectionner un parking...</option>'
+    +parkings.filter(function(pk){return pk.actif;}).map(function(pk){
+      return '<option value="'+pk.id+'">'+esc(pk.nom)+'</option>';
+    }).join('');
+  esel.innerHTML='<option value="">Sélectionner un événement...</option>'
+    +events.map(function(ev){
+      return '<option value="'+ev.id+'">'+esc(ev.nom)+(ev.date?' · '+fmtDate(ev.date):'')+'</option>';
+    }).join('');
+  // Auto-sélectionner si 1 seul
+  if(parkings.filter(function(pk){return pk.actif;}).length===1) psel.value=parkings.find(function(pk){return pk.actif;}).id;
+  if(events.length===1) esel.value=events[0].id;
+  changerParkingPointeur();
+}
+
+function changerParkingPointeur(){
+  var pkId=document.getElementById('pp-parking-sel').value;
+  var evId=document.getElementById('pp-event-sel').value;
+  var compteur=document.getElementById('pp-compteur');
+  var empty=document.getElementById('pp-empty');
+  if(!pkId||!evId){
+    compteur.style.display='none';
+    empty.style.display='block';
+    return;
+  }
+  compteur.style.display='block';
+  empty.style.display='none';
+  // Charger init voitures
+  var session=parkingSessions.find(function(s){return s.parking_id===pkId&&s.evenement_id===evId;});
+  var init=session?session.voitures_init:0;
+  document.getElementById('pp-init-val').value=init;
+  majCompteurParking();
+}
+
+function majCompteurParking(){
+  var pkId=document.getElementById('pp-parking-sel').value;
+  var evId=document.getElementById('pp-event-sel').value;
+  if(!pkId||!evId) return;
+  var pk=parkings.find(function(p){return p.id===pkId;});
+  if(!pk) return;
+  var session=parkingSessions.find(function(s){return s.parking_id===pkId&&s.evenement_id===evId;});
+  var init=session?session.voitures_init:0;
+  var badges=presences.filter(function(p){return p.evenement_id===evId&&p.present&&p.parking_id===pkId;}).length;
+  var total=init+badges;
+  var reste=pk.capacite-total;
+  var pct=Math.min(100,Math.round(total/pk.capacite*100));
+  var color=reste<=0?'var(--danger)':reste<=5?'var(--danger)':reste<=20?'var(--accent2)':'var(--success)';
+  document.getElementById('pp-total').textContent=total;
+  document.getElementById('pp-total').style.color=color;
+  document.getElementById('pp-capacite').textContent='/ '+pk.capacite+' places';
+  document.getElementById('pp-jauge').style.width=pct+'%';
+  document.getElementById('pp-jauge').style.background=color;
+  document.getElementById('pp-statut').textContent=reste<=0?'COMPLET':reste<=5?reste+' place(s) restante(s) !':reste+' places disponibles';
+  document.getElementById('pp-statut').style.color=color;
+}
+
+async function ajusterParking(delta){
+  var pkId=document.getElementById('pp-parking-sel').value;
+  var evId=document.getElementById('pp-event-sel').value;
+  if(!pkId||!evId) return;
+  var pk=parkings.find(function(p){return p.id===pkId;});
+  var session=parkingSessions.find(function(s){return s.parking_id===pkId&&s.evenement_id===evId;});
+  var init=session?session.voitures_init:0;
+  var newInit=Math.max(0,init+delta);
+  // Sauvegarder
+  try{
+    if(session){
+      var r=await fetch(api('parking_sessions')+'?id=eq.'+session.id,{method:'PATCH',headers:H(),body:JSON.stringify({voitures_init:newInit})});
+      if(!r.ok) throw new Error('Erreur');
+      session.voitures_init=newInit;
+    } else {
+      var r=await fetch(api('parking_sessions'),{method:'POST',headers:H(),body:JSON.stringify({parking_id:pkId,evenement_id:evId,voitures_init:newInit})});
+      if(!r.ok) throw new Error('Erreur');
+      var ns=await r.json();
+      parkingSessions.push(Array.isArray(ns)?ns[0]:ns);
+    }
+    document.getElementById('pp-init-val').value=newInit;
+    majCompteurParking();
+    // Vibration tactile
+    if(navigator.vibrate) navigator.vibrate(30);
+    // Alerte si proche du max
+    var pk2=parkings.find(function(p){return p.id===pkId;});
+    var session2=parkingSessions.find(function(s){return s.parking_id===pkId&&s.evenement_id===evId;});
+    var badges=presences.filter(function(p){return p.evenement_id===evId&&p.present&&p.parking_id===pkId;}).length;
+    var total=(session2?session2.voitures_init:0)+badges;
+    var reste=pk2.capacite-total;
+    if(reste<=5&&reste>0) toast('Attention : '+reste+' place(s) restante(s) !','warn');
+    if(reste<=0){ toast('Parking complet !','error'); playSound('error'); }
+    else if(delta>0) playSound('success');
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+async function sauvegarderInitParking(){
+  var pkId=document.getElementById('pp-parking-sel').value;
+  var evId=document.getElementById('pp-event-sel').value;
+  var val=parseInt(document.getElementById('pp-init-val').value)||0;
+  if(!pkId||!evId) return;
+  var session=parkingSessions.find(function(s){return s.parking_id===pkId&&s.evenement_id===evId;});
+  try{
+    if(session){
+      await fetch(api('parking_sessions')+'?id=eq.'+session.id,{method:'PATCH',headers:H(),body:JSON.stringify({voitures_init:val})});
+      session.voitures_init=val;
+    } else {
+      var r=await fetch(api('parking_sessions'),{method:'POST',headers:H(),body:JSON.stringify({parking_id:pkId,evenement_id:evId,voitures_init:val})});
+      var ns=await r.json();
+      parkingSessions.push(Array.isArray(ns)?ns[0]:ns);
+    }
+    majCompteurParking();
+    toast('Enregistré !','success');
+  }catch(e){toast('Erreur : '+e.message,'error');}
 }
 
 function toast(msg,type='info'){const el=document.createElement('div');el.className=`toast-item ${type}`;el.innerHTML=msg;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),4000);}
