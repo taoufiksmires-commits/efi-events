@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parkings — EFI Events</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#05050f;--surface:#111124;--border:rgba(255,255,255,.08);--muted:rgba(255,255,255,.45);--text:#f0f0f8;--accent:#e8251a;--success:#2dd4a0;--warn:#ff6b35;--danger:#ff3b30}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding:20px 16px 40px}
+.wrap{max-width:480px;margin:0 auto}
+.logo{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#c41d13);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;box-shadow:0 10px 30px rgba(232,37,26,.35)}
+h1{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:2px;text-align:center}
+.sub{text-align:center;color:var(--muted);font-size:12px;margin-bottom:6px}
+.maj{text-align:center;color:var(--muted);font-size:10px;margin-bottom:22px}
+.maj .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--success);margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+select{width:100%;padding:13px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-weight:600;margin-bottom:18px;outline:none}
+.pk{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px}
+.pk-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.pk-nom{font-weight:700;font-size:16px}
+.pk-num{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1}
+.pk-cap{font-size:12px;color:var(--muted)}
+.bar{height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;margin-bottom:8px}
+.fill{height:100%;border-radius:5px;transition:width .6s ease}
+.pk-statut{font-size:13px;font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:50px 20px;font-size:13px}
+.full-banner{border-color:rgba(255,59,48,.4)!important;background:rgba(255,59,48,.06)!important}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.45}}
+.blink{animation:blink 1.2s infinite}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">P</div>
+  <h1>Parkings EFI</h1>
+  <div class="sub" id="ev-nom">Chargement…</div>
+  <div class="maj"><span class="dot"></span>Mise à jour automatique — <span id="maj-time">—</span></div>
+  <select id="ev-sel" onchange="render()" style="display:none"></select>
+  <div id="liste"><div class="empty">Chargement des parkings…</div></div>
+</div>
+<script>
+var URL_='https://aygrpgccjzwdhwtqbotw.supabase.co';
+var KEY_='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3JwZ2Njanp3ZGh3dHFib3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTE0MDEsImV4cCI6MjA5NjE4NzQwMX0.KP9oXyPhvznoy-EzIQUIoYjCHfMUMtUwA59YnVmXm78';
+function api(t){return URL_+'/rest/v1/'+t;}
+function H(){return {'apikey':KEY_,'Authorization':'Bearer '+KEY_,'Content-Type':'application/json'};}
+var parkings=[],sessions=[],presences=[],events=[];
+
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+
+async function load(){
+  try{
+    var r=await Promise.all([
+      fetch(api('parkings')+'?actif=eq.true&order=nom.asc',{headers:H()}).then(function(x){return x.json();}),
+      fetch(api('parking_sessions'),{headers:H()}).then(function(x){return x.json();}),
+      fetch(api('presences')+'?present=eq.true&select=evenement_id,parking_id',{headers:H()}).then(function(x){return x.json();}),
+      fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(function(x){return x.json();})
+    ]);
+    parkings=Array.isArray(r[0])?r[0]:[];
+    sessions=Array.isArray(r[1])?r[1]:[];
+    presences=Array.isArray(r[2])?r[2]:[];
+    events=Array.isArray(r[3])?r[3]:[];
+    var sel=document.getElementById('ev-sel');
+    if(events.length>1){
+      var cur=sel.value;
+      sel.style.display='block';
+      sel.innerHTML=events.map(function(e){return '<option value="'+e.id+'">'+esc(e.nom)+'</option>';}).join('');
+      if(cur) sel.value=cur;
+    } else if(events.length===1){
+      sel.innerHTML='<option value="'+events[0].id+'">'+esc(events[0].nom)+'</option>';
+    }
+    render();
+    var d=new Date();
+    document.getElementById('maj-time').textContent=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);
+  }catch(e){
+    document.getElementById('liste').innerHTML='<div class="empty">Erreur de chargement. Réessai…</div>';
+  }
+}
+
+function render(){
+  var evId=document.getElementById('ev-sel').value||(events[0]&&events[0].id);
+  if(!evId){document.getElementById('liste').innerHTML='<div class="empty">Aucun événement.</div>';return;}
+  var ev=events.find(function(e){return e.id===evId;});
+  document.getElementById('ev-nom').textContent=ev?ev.nom:'';
+  if(!parkings.length){document.getElementById('liste').innerHTML='<div class="empty">Aucun parking configuré.</div>';return;}
+  document.getElementById('liste').innerHTML=parkings.map(function(pk){
+    var s=sessions.find(function(x){return x.parking_id===pk.id&&x.evenement_id===evId;});
+    var init=s?s.voitures_init:0;
+    var badges=presences.filter(function(p){return p.evenement_id===evId&&p.parking_id===pk.id;}).length;
+    var total=init+badges;
+    var reste=pk.capacite-total;
+    var pct=Math.min(100,Math.round(total/pk.capacite*100));
+    var col=reste<=0?'var(--danger)':reste<=5?'var(--danger)':pct>=70?'var(--warn)':'var(--success)';
+    var statut=reste<=0?'COMPLET — utilisez un autre parking':reste<=5?reste+' place(s) restante(s) !':reste+' places disponibles';
+    return '<div class="pk'+(reste<=0?' full-banner':'')+'">'
+      +'<div class="pk-head"><div class="pk-nom">'+esc(pk.nom)+'</div>'
+      +'<div><span class="pk-num'+(reste<=5&&reste>0?' blink':'')+'" style="color:'+col+'">'+total+'</span>'
+      +'<span class="pk-cap"> / '+pk.capacite+'</span></div></div>'
+      +'<div class="bar"><div class="fill" style="width:'+pct+'%;background:'+col+'"></div></div>'
+      +'<div class="pk-statut" style="color:'+col+'">'+statut+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+load();
+setInterval(load,10000);
+</script>
+</body>
+</html>
