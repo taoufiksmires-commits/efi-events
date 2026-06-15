@@ -733,8 +733,12 @@ svg{display:block;flex-shrink:0}
         Format CSV : <strong>Nom, Prénom, Matricule, Email, Département, N°Carte, Contrat</strong><br>
         Si le salarié existe (Nom+Prénom+Matricule) → invité seulement. Sinon → <strong>créé + invité</strong>.
       </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label>Importer un fichier CSV</label>
+        <input type="file" accept=".csv,.txt" id="inv-import-file" onchange="lireCSVFile('inv-import-file','inv-import-text')" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer">
+      </div>
       <div class="form-group" style="margin-bottom:12px">
-        <label>Coller la liste CSV</label>
+        <label>Ou coller la liste CSV</label>
         <textarea id="inv-import-text" style="min-height:110px" placeholder="Dupont, Jean, MAT-001, jean@efi.com, Production, 04:28:60:FA, CDI&#10;Martin, Sophie, MAT-002, , RH, , CDD"></textarea>
       </div>
       <div id="inv-import-preview" style="margin-bottom:12px"></div>
@@ -784,7 +788,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.102
+        v1.8.103
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -939,7 +943,11 @@ svg{display:block;flex-shrink:0}
         </div>
         <div class="card-body">
           <div class="import-info">Format : <strong>Nom, Prénom, Matricule, Email, Département, N°Carte, Contrat</strong></div>
-          <div class="form-group" style="margin-bottom:12px"><label>Coller ici</label>
+          <div class="form-group" style="margin-bottom:8px">
+            <label>Importer un fichier CSV</label>
+            <input type="file" accept=".csv,.txt" id="import-users-file" onchange="lireCSVFile('import-users-file','import-users-text')" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer">
+          </div>
+          <div class="form-group" style="margin-bottom:12px"><label>Ou coller ici</label>
             <textarea id="import-users-text" style="min-height:90px" placeholder="Dupont, Jean, MAT-001, jean@efi.com, Production, 04:28:60, CDI"></textarea>
           </div>
           <div id="import-users-preview" style="margin-bottom:12px"></div>
@@ -3550,6 +3558,20 @@ async function reinitialiserEvenement(){
     renderDashboard();
   }catch(e){toast('Erreur : '+e.message,'error');}
   finally{hideLoading();}
+}
+
+function lireCSVFile(inputId, textareaId){
+  var input=document.getElementById(inputId);
+  var textarea=document.getElementById(textareaId);
+  if(!input||!input.files||!input.files[0]) return;
+  var file=input.files[0];
+  var reader=new FileReader();
+  reader.onload=function(e){
+    textarea.value=e.target.result;
+    toast('Fichier chargé : '+file.name,'success');
+  };
+  reader.onerror=function(){toast('Erreur lecture fichier','error');};
+  reader.readAsText(file, 'UTF-8');
 }
 
 function toast(msg,type='info'){const el=document.createElement('div');el.className=`toast-item ${type}`;el.innerHTML=msg;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),4000);}
