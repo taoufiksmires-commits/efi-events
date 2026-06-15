@@ -784,7 +784,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.101
+        v1.8.102
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -3152,14 +3152,7 @@ function closeMobileAdminMenu() {
   document.getElementById('admin-drawer-overlay').style.display = 'none';
 }
 
-function demanderMode(eventId) {
-  pendingEventId = eventId;
-  var ev = events.find(function(e){ return e.id===eventId; });
-  var nomEl = document.getElementById('choix-event-nom');
-  if(nomEl && ev) nomEl.textContent = ev.nom + (ev.date?' · '+fmtDate(ev.date):'');
-  var modal = document.getElementById('modal-choix-mode');
-  if(modal) modal.style.display = 'flex';
-}
+
 
 function confirmerMode(mode) {
   document.getElementById('modal-choix-mode').style.display = 'none';
@@ -3380,7 +3373,7 @@ function renderDashboardCards(){
     c+='<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">';
     c+='<div style="flex:1"><div style="font-weight:700;font-size:14px">'+esc(ev.nom)+'</div>';
     c+='<div style="font-size:11px;color:var(--muted)">'+(ev.date?fmtDate(ev.date):'')+(ev.lieu?' &middot; '+esc(ev.lieu):'')+'</div></div>';
-    c+='<button class="btn btn-primary btn-sm" onclick="demanderMode(\''+ev.id+'\')">Pointer</button></div>';
+    c+='<button class="btn btn-primary btn-sm" onclick="selectEvent(\''+ev.id+'\')">Pointer</button></div>';
     c+='<div style="padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px">';
     c+='<div>';
     c+='<div style="margin-bottom:12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Entrees</div>';
