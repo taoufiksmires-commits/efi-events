@@ -19,7 +19,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .app-layout{display:flex;flex:1}
 aside{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
 .aside-logo{padding:16px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.logo-img{width:40px;height:40px;object-fit:contain;border-radius:6px;background:#fff;padding:3px;flex-shrink:0}
+.logo-img{width:44px;height:44px;object-fit:contain;border-radius:8px;background:#fff;padding:4px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .logo-text{display:flex;flex-direction:column;line-height:1.1}
 .logo-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent)}
 .logo-sub{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
@@ -784,7 +784,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.99
+        v1.8.100
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -3079,11 +3079,15 @@ function renderParkings() {
   const tbody = document.getElementById('parkings-body');
   if(!tbody) return;
   if(!parkings.length){ tbody.innerHTML='<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">🅿️</div><div>Aucun parking.</div></div></td></tr>'; return; }
+  // Remplir select reset
+  var rsel=document.getElementById('reset-event-sel');
+  if(rsel) rsel.innerHTML='<option value="">Choisir un événement...</option>'+events.map(function(ev){return '<option value="'+ev.id+'">'+esc(ev.nom)+(ev.date?' · '+fmtDate(ev.date):'')+'</option>';}).join('');
   tbody.innerHTML = parkings.map(pk => `<tr>
     <td><strong>${esc(pk.nom)}</strong></td>
     <td class="mono">${pk.capacite} places</td>
     <td><span class="badge ${pk.actif?'badge-present':'badge-absent'}">${pk.actif?'✅ Actif':'❌ Inactif'}</span></td>
     <td>
+      <button class="icon-btn" title="Vider le parking" onclick="viderParking('${pk.id}')" style="color:var(--accent2)"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' width='16' height='16'><path d='M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6'/></svg></button>
       <button class="icon-btn edit" onclick="editParking('${pk.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
       <button class="icon-btn del" onclick="deleteParking('${pk.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
     </td>
@@ -3528,6 +3532,37 @@ async function sauvegarderInitParking(){
     majCompteurParking();
     toast('Enregistré !','success');
   }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+async function viderParking(pkId){
+  if(!confirm('Remettre ce parking à 0 pour tous les événements ?')) return;
+  try{
+    await fetch(api('parking_sessions')+'?parking_id=eq.'+pkId,{method:'PATCH',headers:H(),body:JSON.stringify({voitures_init:0})});
+    parkingSessions=parkingSessions.map(function(s){return s.parking_id===pkId?Object.assign({},s,{voitures_init:0}):s;});
+    toast('Parking vidé','success');
+    renderParkings();
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+async function reinitialiserEvenement(){
+  var evId=document.getElementById('reset-event-sel').value;
+  if(!evId){toast('Sélectionnez un événement','error');return;}
+  var ev=events.find(function(e){return e.id===evId;});
+  if(!confirm('Réinitialiser "'+( ev?ev.nom:'cet événement')+'" ?\n\n• Tous les parkings remis à 0\n• Tous les invités remis en non-présents\n\nCette action est irréversible.')) return;
+  showLoading('Réinitialisation...');
+  try{
+    // 1. Remettre les parkings à 0
+    await fetch(api('parking_sessions')+'?evenement_id=eq.'+evId,{method:'PATCH',headers:H(),body:JSON.stringify({voitures_init:0})});
+    // 2. Supprimer toutes les présences de l'événement
+    await fetch(api('presences')+'?evenement_id=eq.'+evId,{method:'DELETE',headers:H()});
+    // Mettre à jour la mémoire
+    parkingSessions=parkingSessions.map(function(s){return s.evenement_id===evId?Object.assign({},s,{voitures_init:0}):s;});
+    presences=presences.filter(function(p){return p.evenement_id!==evId;});
+    toast('Événement réinitialisé','success');
+    renderParkings();
+    renderDashboard();
+  }catch(e){toast('Erreur : '+e.message,'error');}
+  finally{hideLoading();}
 }
 
 function toast(msg,type='info'){const el=document.createElement('div');el.className=`toast-item ${type}`;el.innerHTML=msg;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),4000);}
