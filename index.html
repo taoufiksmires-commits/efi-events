@@ -723,6 +723,7 @@ svg{display:block;flex-shrink:0}
         <input class="search-input" type="text" id="invite-search" placeholder="🔍 Chercher..." oninput="renderInviteList()" style="flex:1;min-width:140px">
         <button class="btn btn-ghost btn-sm" onclick="toggleAllInvite(true)">Tout cocher</button>
         <button class="btn btn-ghost btn-sm" onclick="toggleAllInvite(false)">Tout décocher</button>
+        <button onclick="supprimerInvitesSelectionnes()" class="btn btn-sm" style="background:rgba(232,37,26,.15);color:var(--accent);border:1px solid rgba(232,37,26,.3)">🗑 Supprimer sélection</button>
       </div>
       <div class="dept-filter" id="dept-filter"></div>
       <div class="invite-list" id="invite-list"></div>
@@ -788,7 +789,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.103
+        v1.8.104
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -928,10 +929,18 @@ svg{display:block;flex-shrink:0}
             <button class="btn btn-ghost btn-sm" onclick="showImportUsers()">📥 Import CSV</button>
             <button class="btn btn-primary btn-sm" onclick="openUserModal()">＋ Ajouter</button>
           </div>
+          <div id="users-select-bar" style="display:none;margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+              <input type="checkbox" id="users-check-all" onchange="toggleAllUsers(this.checked)" style="width:16px;height:16px;accent-color:var(--accent)">
+              Tout sélectionner
+            </label>
+            <span id="users-sel-count" style="font-size:12px;color:var(--muted)">0 sélectionné(s)</span>
+            <button onclick="supprimerUsersSelectionnes()" class="btn btn-sm" style="background:rgba(232,37,26,.15);color:var(--accent);border:1px solid rgba(232,37,26,.3);margin-left:auto">🗑 Supprimer la sélection</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Nom</th><th>Prénom</th><th>Département</th><th>Contrat</th><th>Matricule</th><th>N° Carte</th><th>Email</th><th></th></tr></thead>
+            <thead><tr><th style="width:32px"><button onclick="toggleUsersSelectBar()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0" title="Sélection multiple">☑</button></th><th>Nom</th><th>Prénom</th><th>Département</th><th>Contrat</th><th>Matricule</th><th>N° Carte</th><th>Email</th><th></th></tr></thead>
             <tbody id="users-body"></tbody>
           </table>
         </div>
@@ -2637,6 +2646,7 @@ function renderUsers(){
   const tbody=document.getElementById('users-body');
   if(!data.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👥</div><div>Aucun salarié.</div></div></td></tr>`;return;}
   tbody.innerHTML=data.map(u=>`<tr>
+    <td><input type="checkbox" class="user-chk" data-id="${u.id}" onchange="majUsersCount()" style="width:15px;height:15px;accent-color:var(--accent)"></td>
     <td><strong>${esc(u.nom)}</strong></td><td>${esc(u.prenom)}</td>
     <td class="mono">${esc(u.departement||'—')}</td>
     <td>${u.contrat?`<span class="badge badge-contrat">${esc(u.contrat)}</span>`:'—'}</td>
@@ -3572,6 +3582,68 @@ function lireCSVFile(inputId, textareaId){
   };
   reader.onerror=function(){toast('Erreur lecture fichier','error');};
   reader.readAsText(file, 'UTF-8');
+}
+
+var usersSelectBarVisible=false;
+function toggleUsersSelectBar(){
+  usersSelectBarVisible=!usersSelectBarVisible;
+  var bar=document.getElementById('users-select-bar');
+  if(bar) bar.style.display=usersSelectBarVisible?'flex':'none';
+  if(!usersSelectBarVisible){
+    document.querySelectorAll('.user-chk').forEach(function(c){c.checked=false;});
+    document.getElementById('users-check-all').checked=false;
+    majUsersCount();
+  }
+}
+function majUsersCount(){
+  var chks=document.querySelectorAll('.user-chk:checked');
+  var el=document.getElementById('users-sel-count');
+  if(el) el.textContent=chks.length+' sélectionné(s)';
+}
+function toggleAllUsers(checked){
+  document.querySelectorAll('.user-chk').forEach(function(c){c.checked=checked;});
+  majUsersCount();
+}
+async function supprimerUsersSelectionnes(){
+  var ids=Array.from(document.querySelectorAll('.user-chk:checked')).map(function(c){return c.dataset.id;});
+  if(!ids.length){toast('Sélectionnez des salariés','error');return;}
+  if(!confirm('Supprimer '+ids.length+' salarié(s) ? Cette action est irréversible.')) return;
+  showLoading('Suppression...');
+  var errors=0;
+  for(var i=0;i<ids.length;i++){
+    try{
+      var r=await fetch(api('users')+'?id=eq.'+ids[i],{method:'DELETE',headers:H()});
+      if(!r.ok) errors++;
+      else users=users.filter(function(u){return u.id!==ids[i];});
+    }catch(e){errors++;}
+  }
+  hideLoading();
+  if(errors) toast(errors+' erreur(s) lors de la suppression','error');
+  else toast(ids.length+' salarié(s) supprimé(s)','success');
+  toggleUsersSelectBar();
+  renderUsers();
+  renderDashboard();
+}
+async function supprimerInvitesSelectionnes(){
+  if(!currentInviteEventId){toast('Sélectionnez un événement','error');return;}
+  var ids=Array.from(inviteChecked);
+  if(!ids.length){toast('Cochez des invités à supprimer','error');return;}
+  if(!confirm('Retirer '+ids.length+' invité(s) de cet événement ?')) return;
+  showLoading('Suppression...');
+  var errors=0;
+  for(var i=0;i<ids.length;i++){
+    try{
+      var r=await fetch(api('invitations')+'?evenement_id=eq.'+currentInviteEventId+'&user_id=eq.'+ids[i],{method:'DELETE',headers:H()});
+      if(!r.ok) errors++;
+      else invitations=invitations.filter(function(inv){return !(inv.evenement_id===currentInviteEventId&&inv.user_id===ids[i]);});
+    }catch(e){errors++;}
+  }
+  hideLoading();
+  inviteChecked.clear();
+  if(errors) toast(errors+' erreur(s)','error');
+  else toast(ids.length+' invité(s) retiré(s)','success');
+  renderInviteList();
+  renderDashboard();
 }
 
 function toast(msg,type='info'){const el=document.createElement('div');el.className=`toast-item ${type}`;el.innerHTML=msg;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),4000);}
