@@ -551,11 +551,7 @@ svg{display:block;flex-shrink:0}
       Où êtes-vous positionné pour ce pointage ?
     </p>
     <div id="parking-choices" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px"></div>
-    <div style="border-top:1px solid var(--border);padding-top:14px">
-      <button onclick="choisirParking(null)" style="width:100%;padding:13px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-size:13px;cursor:pointer;text-align:left">
-        🚪 Entrée principale — pas de parking
-      </button>
-    </div>
+
   </div>
 </div>
 
@@ -789,7 +785,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.105
+        v1.8.106
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1224,15 +1220,12 @@ let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegu
 let pendingEId=null, modeRepas=false;
 
 function clicPointageNav(el){
-  // Si un événement est déjà sélectionné, proposer le choix mode
-  if(currentEventId){
-    pendingEId=currentEventId;
-    var ev=events.find(function(e){return e.id===currentEventId;});
-    var nomEl=document.getElementById('choix-event-nom');
-    if(nomEl&&ev) nomEl.textContent=ev.nom+(ev.date?' · '+fmtDate(ev.date):'');
-    document.getElementById('modal-choix-mode').style.display='flex';
+  // Retour à la dernière page de pointage utilisée
+  if(currentParkingId && currentEventId){
+    // Le pointeur était sur un parking -> retour à sa page parking
+    ouvrirPageParking(currentParkingId);
   } else {
-    // Sinon naviguer normalement vers le picker d'événement
+    // Entrée principale ou pas d'événement -> pointage normal / picker
     mobileNav('pointage',el);
   }
 }
@@ -1814,10 +1807,33 @@ async function silentRefresh() {
 }
 
 // ── PARKINGS ──────────────────────────────────────────────────
-function ouvrirModalParking() {
+async function ouvrirModalParking() {
   const choices = document.getElementById('parking-choices');
   if(!choices) return;
-  choices.innerHTML = parkings.map(pk => {
+  // Rafraîchir les données parking depuis la base AVANT d'afficher
+  try{
+    const fresh = await fetch(api('parking_sessions'),{headers:H()}).then(r=>r.json());
+    if(Array.isArray(fresh)) parkingSessions = fresh;
+  }catch(e){}
+  // Stats entrée principale : présents pointés sur cet événement
+  const nbPresents = presences.filter(p=>p.evenement_id===currentEventId && p.present).length;
+  const nbInvites = invitations.filter(i=>i.evenement_id===currentEventId).length;
+  const pctE = nbInvites ? Math.min(100, Math.round(nbPresents/nbInvites*100)) : 0;
+  let html = `<button onclick="choisirParking(null)" style="
+    width:100%;padding:18px 16px;border-radius:12px;
+    border:2px solid var(--accent);
+    background:rgba(232,37,26,.08);
+    cursor:pointer;text-align:left;transition:all .2s">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-weight:700;font-size:16px;color:var(--text)">🚪 Entrée principale</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--success)">${nbPresents}/${nbInvites}</div>
+    </div>
+    <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+      <div style="width:${pctE}%;height:100%;background:var(--success);border-radius:4px;transition:width .3s"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">Pointage des invités — ${pctE}% présents</div>
+  </button>`;
+  html += parkings.map(pk => {
     const nb = getNbVoituresParking(pk.id);
     const reste = pk.capacite - nb;
     const pct = Math.round(nb / pk.capacite * 100);
@@ -1837,6 +1853,7 @@ function ouvrirModalParking() {
       <div style="font-size:11px;color:${couleur};margin-top:4px">${reste <= 0 ? '🔴 Complet' : reste <= 5 ? '🟠 '+reste+' place(s) restante(s)' : '🟢 '+reste+' places disponibles'}</div>
     </button>`;
   }).join('');
+  choices.innerHTML = html;
   document.getElementById('modal-parking').classList.add('show');
 }
 
@@ -2019,6 +2036,11 @@ function navigateTo(name, pushState=true) {
   if(name==='historique') loadHistorique();
   if(name==='parkings') renderParkings();
   if(name==='tombola') initTombolaPage();
+  if(name==='dashboard'){
+    fetch(api('parking_sessions'),{headers:H()}).then(r=>r.json()).then(function(d){
+      if(Array.isArray(d)){ parkingSessions=d; renderDashboard(); }
+    }).catch(function(){});
+  }
   if(name==='parking-pointeur') initParkingPointeurPage();
   if(name==='evenements'||name==='dashboard') { renderEvents(); renderDashboard(); }
   // Pousser dans l'historique
