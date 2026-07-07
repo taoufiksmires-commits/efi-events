@@ -789,7 +789,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.104
+        v1.8.105
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -3442,6 +3442,8 @@ function initParkingPointeurPage(){
   changerParkingPointeur();
 }
 
+var _parkingRefreshTimer=null;
+
 function changerParkingPointeur(){
   var pkId=document.getElementById('pp-parking-sel').value;
   var evId=document.getElementById('pp-event-sel').value;
@@ -3450,15 +3452,36 @@ function changerParkingPointeur(){
   if(!pkId||!evId){
     compteur.style.display='none';
     empty.style.display='block';
+    if(_parkingRefreshTimer){clearInterval(_parkingRefreshTimer);_parkingRefreshTimer=null;}
     return;
   }
   compteur.style.display='block';
   empty.style.display='none';
-  // Charger init voitures
   var session=parkingSessions.find(function(s){return s.parking_id===pkId&&s.evenement_id===evId;});
   var init=session?session.voitures_init:0;
   document.getElementById('pp-init-val').value=init;
   majCompteurParking();
+  // Lancer refresh toutes les 5s
+  if(_parkingRefreshTimer) clearInterval(_parkingRefreshTimer);
+  _parkingRefreshTimer=setInterval(syncParkingFromBase,5000);
+}
+
+async function syncParkingFromBase(){
+  var pkId=document.getElementById('pp-parking-sel');
+  var evId=document.getElementById('pp-event-sel');
+  if(!pkId||!evId||!pkId.value||!evId.value) return;
+  try{
+    var r=await fetch(api('parking_sessions')+'?parking_id=eq.'+pkId.value+'&evenement_id=eq.'+evId.value,{headers:H()});
+    var data=await r.json();
+    if(Array.isArray(data)&&data.length){
+      var s=data[0];
+      var idx=parkingSessions.findIndex(function(x){return x.id===s.id;});
+      if(idx>=0) parkingSessions[idx]=s;
+      else parkingSessions.push(s);
+      document.getElementById('pp-init-val').value=s.voitures_init;
+      majCompteurParking();
+    }
+  }catch(e){}
 }
 
 function majCompteurParking(){
@@ -3483,40 +3506,66 @@ function majCompteurParking(){
   document.getElementById('pp-statut').style.color=color;
 }
 
+var _parkingBusy=false;
+
 async function ajusterParking(delta){
+  if(_parkingBusy) return; // Bloquer double-clic
   var pkId=document.getElementById('pp-parking-sel').value;
   var evId=document.getElementById('pp-event-sel').value;
   if(!pkId||!evId) return;
-  var pk=parkings.find(function(p){return p.id===pkId;});
-  var session=parkingSessions.find(function(s){return s.parking_id===pkId&&s.evenement_id===evId;});
-  var init=session?session.voitures_init:0;
-  var newInit=Math.max(0,init+delta);
-  // Sauvegarder
+
+  _parkingBusy=true;
+  // Griser les boutons
+  document.querySelectorAll('#pp-compteur button').forEach(function(b){b.disabled=true;b.style.opacity='.4';});
+
   try{
+    // 1. Lire la valeur ACTUELLE en base (pas en mémoire)
+    var r=await fetch(api('parking_sessions')+'?parking_id=eq.'+pkId+'&evenement_id=eq.'+evId,{headers:H()});
+    var sessions=await r.json();
+    var session=Array.isArray(sessions)&&sessions.length?sessions[0]:null;
+
     if(session){
-      var r=await fetch(api('parking_sessions')+'?id=eq.'+session.id,{method:'PATCH',headers:H(),body:JSON.stringify({voitures_init:newInit})});
-      if(!r.ok) throw new Error('Erreur');
-      session.voitures_init=newInit;
+      // 2. Incrément atomique via RPC
+      var rpc=await fetch(URL_+'/rest/v1/rpc/increment_parking',{
+        method:'POST',headers:H(),
+        body:JSON.stringify({session_id:session.id,delta:delta})
+      });
+      if(!rpc.ok) throw new Error('Erreur RPC');
+      // 3. Relire la nouvelle valeur
+      var r2=await fetch(api('parking_sessions')+'?id=eq.'+session.id,{headers:H()});
+      var updated=await r2.json();
+      var newSession=Array.isArray(updated)?updated[0]:updated;
+      // Mettre à jour la mémoire
+      var idx=parkingSessions.findIndex(function(s){return s.id===session.id;});
+      if(idx>=0) parkingSessions[idx]=newSession;
+      else parkingSessions.push(newSession);
     } else {
-      var r=await fetch(api('parking_sessions'),{method:'POST',headers:H(),body:JSON.stringify({parking_id:pkId,evenement_id:evId,voitures_init:newInit})});
-      if(!r.ok) throw new Error('Erreur');
-      var ns=await r.json();
+      // Pas de session -> créer avec delta si positif
+      var initVal=Math.max(0,delta);
+      var rc=await fetch(api('parking_sessions'),{method:'POST',headers:H(),body:JSON.stringify({parking_id:pkId,evenement_id:evId,voitures_init:initVal})});
+      if(!rc.ok) throw new Error('Erreur création');
+      var ns=await rc.json();
       parkingSessions.push(Array.isArray(ns)?ns[0]:ns);
     }
-    document.getElementById('pp-init-val').value=newInit;
+
     majCompteurParking();
-    // Vibration tactile
     if(navigator.vibrate) navigator.vibrate(30);
-    // Alerte si proche du max
-    var pk2=parkings.find(function(p){return p.id===pkId;});
-    var session2=parkingSessions.find(function(s){return s.parking_id===pkId&&s.evenement_id===evId;});
+
+    // Alerte places restantes
+    var pk=parkings.find(function(p){return p.id===pkId;});
+    var s2=parkingSessions.find(function(s){return s.parking_id===pkId&&s.evenement_id===evId;});
     var badges=presences.filter(function(p){return p.evenement_id===evId&&p.present&&p.parking_id===pkId;}).length;
-    var total=(session2?session2.voitures_init:0)+badges;
-    var reste=pk2.capacite-total;
-    if(reste<=5&&reste>0) toast('Attention : '+reste+' place(s) restante(s) !','warn');
-    if(reste<=0){ toast('Parking complet !','error'); playSound('error'); }
+    var total=(s2?s2.voitures_init:0)+badges;
+    var reste=pk.capacite-total;
+    if(reste<=0){toast('Parking complet !','error');playSound('error');}
+    else if(reste<=5){toast('Attention : '+reste+' place(s) restante(s) !','warn');}
     else if(delta>0) playSound('success');
+
   }catch(e){toast('Erreur : '+e.message,'error');}
+  finally{
+    _parkingBusy=false;
+    document.querySelectorAll('#pp-compteur button').forEach(function(b){b.disabled=false;b.style.opacity='1';});
+  }
 }
 
 async function sauvegarderInitParking(){
