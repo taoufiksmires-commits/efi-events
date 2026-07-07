@@ -785,7 +785,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.107
+        v1.8.108
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -2107,7 +2107,7 @@ function renderEvents(){
         </div>
         <div class="event-actions">
           <button class="btn btn-primary btn-sm btn-pulse" onclick="selectEvent('${ev.id}')">🎯 Pointer</button>
-          <button class="btn btn-ghost btn-sm" onclick="openInviteModal('${ev.id}')">👥 (${evInv})</button>
+          ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openInviteModal('${ev.id}')">👥 (${evInv})</button>`:''}
           ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openEventModal('${ev.id}')">✏️ Modifier</button>`:''}
           ${isAdmin()?`<button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">🗑</button>`:''}
         </div>
@@ -2235,7 +2235,7 @@ function renderPointage(){
   const q=document.getElementById('pointage-search').value.toLowerCase().trim();
   const data=getInvitedUsers();
   if(!data.length){
-    document.getElementById('pointage-grid').innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👥</div><div>Aucun invité.<br><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openInviteModal('${currentEventId}')">Gérer les invités</button></div></div>`;
+    document.getElementById('pointage-grid').innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👥</div><div>Aucun invité.${isAdmin()?`<br><button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="openInviteModal('${currentEventId}')">Gérer les invités</button>`:''}</div></div>`;
     return;
   }
   const filtered=q?data.filter(r=>(r.nom+' '+r.prenom).toLowerCase().includes(q)):data;
@@ -2537,6 +2537,7 @@ async function doScan(){
 
 // INVITATIONS
 function openInviteModal(eventId){
+  if(!isAdmin()){ toast('Gestion des invités réservée aux administrateurs','error'); return; }
   currentInviteEventId=eventId;
   const ev=events.find(e=>e.id===eventId);
   document.getElementById('invite-event-name').textContent=ev?`📅 ${ev.nom} · ${ev.date?fmtDate(ev.date):''}` :'';
