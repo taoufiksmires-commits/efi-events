@@ -785,7 +785,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.108
+        v1.8.109
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1174,6 +1174,14 @@ svg{display:block;flex-shrink:0}
             <div style="font-family:Bebas Neue,sans-serif;font-size:16px;letter-spacing:1px;margin-bottom:10px;color:var(--accent)">🏆 Gagnants</div>
             <div id="tombola-list"></div>
           </div>
+          <!-- Exclusions -->
+          <div id="tombola-exclusions-zone" style="margin-top:22px;border-top:1px solid var(--border);padding-top:16px">
+            <div style="font-family:Bebas Neue,sans-serif;font-size:16px;letter-spacing:1px;margin-bottom:8px;color:var(--muted)">🚫 Exclusions du tirage</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Les personnes exclues ne peuvent pas être tirées au sort (organisateurs, direction...).</div>
+            <input type="text" id="excl-search" placeholder="🔍 Chercher une personne à exclure..." oninput="renderExclSuggestions()" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:13px;outline:none;margin-bottom:8px">
+            <div id="excl-suggestions"></div>
+            <div id="excl-list" style="margin-top:10px"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1216,7 +1224,7 @@ const KEY_ = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const STORAGE_URL = `${URL_}/storage/v1/object/public/events-images/`;
 const EFI_LOGO = 'https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png';
 
-let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[], repas=[], tombola=[];
+let users=[], events=[], presences=[], invitations=[], pointeurs=[], eventDelegues=[], parkings=[], parkingSessions=[], repas=[], tombola=[], tombolaExclusions=[];
 let pendingEId=null, modeRepas=false;
 
 function clicPointageNav(el){
@@ -3236,10 +3244,16 @@ function initTombolaPage(){
 function chargerTombola(){
   var evId=document.getElementById('tombola-event-sel').value;
   if(!evId){document.getElementById('tombola-gagnants').style.display='none';return;}
+  // Charger les exclusions depuis la base
+  fetch(api('tombola_exclusions')+'?evenement_id=eq.'+evId,{headers:H()}).then(function(r){return r.json();}).then(function(d){
+    if(Array.isArray(d)) tombolaExclusions=d;
+    renderExclList();
+  }).catch(function(){});
   var gagnants=tombola.filter(function(t){return t.evenement_id===evId;}).sort(function(a,b){return a.rang-b.rang;});
   var presents=presences.filter(function(p){return p.evenement_id===evId&&p.present;}).length;
+  var nbExclus=tombolaExclusions.filter(function(x){return x.evenement_id===evId;}).length;
   var status=document.getElementById('tombola-status');
-  if(status) status.textContent=presents+' présents éligibles · '+gagnants.length+' gagnant(s) tiré(s)';
+  if(status) status.textContent=(presents-nbExclus)+' éligibles · '+gagnants.length+' gagnant(s)'+(nbExclus?' · '+nbExclus+' exclu(s)':'');
   afficherGagnants(evId);
 }
 
@@ -3271,8 +3285,9 @@ async function tirerTombola(){
   if(!evId){toast('Sélectionnez un événement.','error');return;}
   // Présents non encore gagnants
   var dejaGagnants=tombola.filter(function(t){return t.evenement_id===evId;}).map(function(t){return t.user_id;});
+  var exclus=tombolaExclusions.filter(function(x){return x.evenement_id===evId;}).map(function(x){return x.user_id;});
   var eligibles=presences.filter(function(p){
-    return p.evenement_id===evId&&p.present&&!dejaGagnants.includes(p.user_id);
+    return p.evenement_id===evId&&p.present&&!dejaGagnants.includes(p.user_id)&&!exclus.includes(p.user_id);
   });
   if(!eligibles.length){
     toast('Tous les présents ont déjà gagné !','info');
@@ -3721,6 +3736,71 @@ async function supprimerInvitesSelectionnes(){
   else toast(ids.length+' invité(s) retiré(s)','success');
   renderInviteList();
   renderDashboard();
+}
+
+function renderExclSuggestions(){
+  var evId=document.getElementById('tombola-event-sel').value;
+  var box=document.getElementById('excl-suggestions');
+  if(!evId||!box) return;
+  var q=(document.getElementById('excl-search').value||'').toLowerCase().trim();
+  if(q.length<2){box.innerHTML='';return;}
+  var exclusIds=tombolaExclusions.filter(function(x){return x.evenement_id===evId;}).map(function(x){return x.user_id;});
+  var presents=presences.filter(function(p){return p.evenement_id===evId&&p.present&&!exclusIds.includes(p.user_id);})
+    .map(function(p){return users.find(function(u){return u.id===p.user_id;});})
+    .filter(Boolean)
+    .filter(function(u){return (u.nom+' '+u.prenom).toLowerCase().indexOf(q)>=0;})
+    .slice(0,6);
+  box.innerHTML=presents.map(function(u){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;margin-bottom:5px">'
+      +'<div style="flex:1"><span style="font-weight:600;font-size:13px">'+esc(u.nom)+' '+esc(u.prenom)+'</span>'
+      +'<span style="font-size:11px;color:var(--muted)"> · '+esc(u.departement||'')+'</span></div>'
+      +'<button onclick="exclureTombola(\''+u.id+'\')" class="btn btn-sm" style="background:rgba(232,37,26,.12);color:var(--accent);border:1px solid rgba(232,37,26,.25);font-size:11px">🚫 Exclure</button>'
+      +'</div>';
+  }).join('')||'<div style="font-size:11px;color:var(--muted);padding:6px">Aucun présent trouvé.</div>';
+}
+
+async function exclureTombola(userId){
+  var evId=document.getElementById('tombola-event-sel').value;
+  if(!evId) return;
+  try{
+    var r=await fetch(api('tombola_exclusions'),{method:'POST',headers:H(),body:JSON.stringify({evenement_id:evId,user_id:userId})});
+    if(!r.ok) throw new Error((await r.json()).message);
+    var nx=await r.json();
+    tombolaExclusions.push(Array.isArray(nx)?nx[0]:nx);
+    document.getElementById('excl-search').value='';
+    document.getElementById('excl-suggestions').innerHTML='';
+    renderExclList();
+    chargerTombola();
+    var u=users.find(function(x){return x.id===userId;});
+    toast((u?u.nom+' '+u.prenom:'Personne')+' exclu(e) du tirage','info');
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+async function reintegrerTombola(exclId){
+  try{
+    await fetch(api('tombola_exclusions')+'?id=eq.'+exclId,{method:'DELETE',headers:H()});
+    tombolaExclusions=tombolaExclusions.filter(function(x){return x.id!==exclId;});
+    renderExclList();
+    chargerTombola();
+    toast('Personne réintégrée au tirage','success');
+  }catch(e){toast('Erreur : '+e.message,'error');}
+}
+
+function renderExclList(){
+  var evId=document.getElementById('tombola-event-sel');
+  var list=document.getElementById('excl-list');
+  if(!evId||!evId.value||!list) return;
+  var exclus=tombolaExclusions.filter(function(x){return x.evenement_id===evId.value;});
+  if(!exclus.length){list.innerHTML='<div style="font-size:11px;color:var(--muted)">Aucune exclusion.</div>';return;}
+  list.innerHTML=exclus.map(function(x){
+    var u=users.find(function(uu){return uu.id===x.user_id;});
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(232,37,26,.05);border:1px solid rgba(232,37,26,.2);border-radius:8px;margin-bottom:5px">'
+      +'<span style="font-size:15px">🚫</span>'
+      +'<div style="flex:1"><span style="font-weight:600;font-size:13px">'+esc(u?u.nom+' '+u.prenom:'?')+'</span>'
+      +'<span style="font-size:11px;color:var(--muted)"> · '+esc(u&&u.departement?u.departement:'')+'</span></div>'
+      +'<button onclick="reintegrerTombola(\''+x.id+'\')" class="btn btn-ghost btn-sm" style="font-size:11px">↩ Réintégrer</button>'
+      +'</div>';
+  }).join('');
 }
 
 function toast(msg,type='info'){const el=document.createElement('div');el.className=`toast-item ${type}`;el.innerHTML=msg;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),4000);}
