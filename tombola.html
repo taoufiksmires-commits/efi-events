@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tombola — EFI Events</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#05050f;--surface:#111124;--border:rgba(255,255,255,.08);--muted:rgba(255,255,255,.45);--text:#f0f0f8;--accent:#e8251a;--success:#2dd4a0;--gold:#ffd166}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding:20px 16px 40px}
+.wrap{max-width:520px;margin:0 auto}
+.logo{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#c41d13);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;box-shadow:0 10px 30px rgba(232,37,26,.35)}
+h1{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:2px;text-align:center}
+.sub{text-align:center;color:var(--muted);font-size:12px;margin-bottom:6px}
+.maj{text-align:center;color:var(--muted);font-size:10px;margin-bottom:20px}
+.maj .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--success);margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.stats{display:flex;gap:10px;margin-bottom:16px}
+.stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1}
+.stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;margin-bottom:14px;outline:none}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;margin:18px 0 10px;color:var(--gold)}
+.winner{background:linear-gradient(135deg,rgba(255,209,102,.1),rgba(232,37,26,.06));border:1px solid rgba(255,209,102,.35);border-radius:12px;padding:13px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.winner .medal{font-size:26px}
+.winner .name{font-weight:700;font-size:15px}
+.winner .meta{font-size:11px;color:var(--muted)}
+.winner .rank{margin-left:auto;font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold)}
+.row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.row .name{font-weight:600;font-size:14px}
+.row .meta{font-size:11px;color:var(--muted)}
+.row .ok{margin-left:auto;color:var(--success);font-size:13px;font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:36px 16px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">🎰</div>
+  <h1>Tombola EFI</h1>
+  <div class="sub" id="ev-nom">Chargement…</div>
+  <div class="maj"><span class="dot"></span>Mise à jour automatique — <span id="maj-time">—</span></div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num" style="color:var(--success)" id="nb-inscrits">—</div><div class="stat-lbl">Inscrits</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--gold)" id="nb-gagnants">—</div><div class="stat-lbl">Gagnants tirés</div></div>
+  </div>
+
+  <div id="zone-gagnants" style="display:none">
+    <div class="section-title">🏆 Gagnants</div>
+    <div id="liste-gagnants"></div>
+  </div>
+
+  <div class="section-title" style="color:var(--text)">✅ Inscrits (présents à l'événement)</div>
+  <input type="text" id="search" placeholder="🔍 Chercher votre nom…" oninput="renderInscrits()">
+  <div id="liste-inscrits"><div class="empty">Chargement…</div></div>
+</div>
+<script>
+var URL_='https://aygrpgccjzwdhwtqbotw.supabase.co';
+var KEY_='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3JwZ2Njanp3ZGh3dHFib3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTE0MDEsImV4cCI6MjA5NjE4NzQwMX0.KP9oXyPhvznoy-EzIQUIoYjCHfMUMtUwA59YnVmXm78';
+function api(t){return URL_+'/rest/v1/'+t;}
+function H(){return {'apikey':KEY_,'Authorization':'Bearer '+KEY_};}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+
+var users=[],presences=[],tombola=[],events=[],evId=null;
+
+async function load(){
+  try{
+    var r=await Promise.all([
+      fetch(api('evenements')+'?order=date.desc',{headers:H()}).then(function(x){return x.json();}),
+      fetch(api('users')+'?select=id,nom,prenom,departement',{headers:H()}).then(function(x){return x.json();}),
+      fetch(api('presences')+'?present=eq.true&select=evenement_id,user_id',{headers:H()}).then(function(x){return x.json();}),
+      fetch(api('tombola')+'?order=rang.asc',{headers:H()}).then(function(x){return x.json();})
+    ]);
+    events=Array.isArray(r[0])?r[0]:[];
+    users=Array.isArray(r[1])?r[1]:[];
+    presences=Array.isArray(r[2])?r[2]:[];
+    tombola=Array.isArray(r[3])?r[3]:[];
+    // Chercher l'événement 90 ans, sinon le plus récent
+    var ev90=events.find(function(e){return (e.nom||'').toLowerCase().indexOf('90')>=0;});
+    var ev=ev90||events[0];
+    if(!ev){document.getElementById('liste-inscrits').innerHTML='<div class="empty">Aucun événement.</div>';return;}
+    evId=ev.id;
+    document.getElementById('ev-nom').textContent=ev.nom;
+    render();
+    var d=new Date();
+    document.getElementById('maj-time').textContent=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);
+  }catch(e){
+    document.getElementById('liste-inscrits').innerHTML='<div class="empty">Erreur de chargement. Réessai…</div>';
+  }
+}
+
+function render(){
+  var inscrits=presences.filter(function(p){return p.evenement_id===evId;});
+  var gagnants=tombola.filter(function(t){return t.evenement_id===evId;});
+  document.getElementById('nb-inscrits').textContent=inscrits.length;
+  document.getElementById('nb-gagnants').textContent=gagnants.length;
+  // Gagnants
+  var zg=document.getElementById('zone-gagnants');
+  if(gagnants.length){
+    zg.style.display='block';
+    var medals=['🥇','🥈','🥉'];
+    document.getElementById('liste-gagnants').innerHTML=gagnants.map(function(t){
+      var u=users.find(function(x){return x.id===t.user_id;});
+      var medal=t.rang<=3?medals[t.rang-1]:'🏅';
+      return '<div class="winner"><span class="medal">'+medal+'</span>'
+        +'<div><div class="name">'+esc(u?u.nom+' '+u.prenom:'?')+'</div>'
+        +'<div class="meta">'+esc(u&&u.departement?u.departement:'')+'</div></div>'
+        +'<div class="rank">#'+t.rang+'</div></div>';
+    }).join('');
+  } else { zg.style.display='none'; }
+  renderInscrits();
+}
+
+function renderInscrits(){
+  var q=(document.getElementById('search').value||'').toLowerCase().trim();
+  var inscrits=presences.filter(function(p){return p.evenement_id===evId;}).map(function(p){
+    return users.find(function(u){return u.id===p.user_id;});
+  }).filter(Boolean).sort(function(a,b){return (a.nom||'').localeCompare(b.nom||'');});
+  var filtered=q?inscrits.filter(function(u){return (u.nom+' '+u.prenom).toLowerCase().indexOf(q)>=0;}):inscrits;
+  var gagnantIds=tombola.filter(function(t){return t.evenement_id===evId;}).map(function(t){return t.user_id;});
+  if(!filtered.length){
+    document.getElementById('liste-inscrits').innerHTML='<div class="empty">'+(q?'Aucun résultat pour « '+esc(q)+' »':'Aucun inscrit pour le moment.<br>Pointez-vous à l\'entrée pour participer !')+'</div>';
+    return;
+  }
+  document.getElementById('liste-inscrits').innerHTML=filtered.map(function(u){
+    var estGagnant=gagnantIds.indexOf(u.id)>=0;
+    return '<div class="row"><div><div class="name">'+esc(u.nom)+' '+esc(u.prenom)+'</div>'
+      +'<div class="meta">'+esc(u.departement||'')+'</div></div>'
+      +'<div class="ok">'+(estGagnant?'🏆 Gagnant':'✅ Inscrit')+'</div></div>';
+  }).join('');
+}
+
+load();
+setInterval(load,10000);
+</script>
+</body>
+</html>
