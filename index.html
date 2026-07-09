@@ -768,6 +768,7 @@ svg{display:block;flex-shrink:0}
     <div class="aside-item" id="export-menu-item" onclick="goPage('export',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span> Export</div>
     <div class="aside-item" id="historique-menu-item" onclick="goPage('historique',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span> Historique</div>
     <div class="aside-item" id="tombola-menu-item" onclick="goPage('tombola',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span> Tombola</div>
+    <div class="aside-item" id="excl-menu-item" onclick="goPage('tombola-excl',this)"><span class="icon">🚫</span> Exclusions</div>
     <div class="aside-item" onclick="goPage('moncompte',this)"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg></span> Mon compte</div>
     <div class="aside-item" id="admin-menu-item" onclick="openComptesModal()" style="display:none"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><circle cx="8" cy="12" r="5"/><path d="M13 12h8M17 10v4"/></svg></span> Comptes</div>
     <div class="aside-item" id="parkings-menu-item" onclick="goPage('parkings',this)" style="display:none"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 010 6H9"/></svg></span> Parkings</div>
@@ -785,7 +786,7 @@ svg{display:block;flex-shrink:0}
     <div class="top-bar">
       <div class="top-bar-title" id="top-title"><span>Dashboard</span></div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:4px 12px;letter-spacing:.5px">
-        v1.8.109
+        v1.8.110
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <img src="https://www.ucly.fr/wp-content/uploads/2025/10/efi-automotive-logo-640x640.png" style="height:32px;opacity:.7;border-radius:4px;background:#fff;padding:2px" onerror="this.style.display='none'" alt="EFI">
@@ -1174,14 +1175,26 @@ svg{display:block;flex-shrink:0}
             <div style="font-family:Bebas Neue,sans-serif;font-size:16px;letter-spacing:1px;margin-bottom:10px;color:var(--accent)">🏆 Gagnants</div>
             <div id="tombola-list"></div>
           </div>
-          <!-- Exclusions -->
-          <div id="tombola-exclusions-zone" style="margin-top:22px;border-top:1px solid var(--border);padding-top:16px">
-            <div style="font-family:Bebas Neue,sans-serif;font-size:16px;letter-spacing:1px;margin-bottom:8px;color:var(--muted)">🚫 Exclusions du tirage</div>
-            <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Les personnes exclues ne peuvent pas être tirées au sort (organisateurs, direction...).</div>
-            <input type="text" id="excl-search" placeholder="🔍 Chercher une personne à exclure..." oninput="renderExclSuggestions()" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:13px;outline:none;margin-bottom:8px">
-            <div id="excl-suggestions"></div>
-            <div id="excl-list" style="margin-top:10px"></div>
-          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- EXCLUSIONS TOMBOLA -->
+    <div class="page" id="page-tombola-excl">
+      <div class="card card-accent" style="max-width:600px;margin:0 auto">
+        <div class="card-header">
+          <div class="card-title">🚫 Exclusions tombola</div>
+          <select id="excl-event-sel" onchange="chargerExclusions()" style="width:200px;margin:0">
+            <option value="">Choisir un événement</option>
+          </select>
+        </div>
+        <div class="card-body">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Les personnes exclues ne peuvent pas être tirées au sort (organisateurs, direction...). Cette page n'apparaît pas sur l'écran de tirage.</div>
+          <input type="text" id="excl-search" placeholder="🔍 Chercher une personne à exclure..." oninput="renderExclSuggestions()" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:13px;outline:none;margin-bottom:8px">
+          <div id="excl-suggestions"></div>
+          <div style="font-family:Bebas Neue,sans-serif;font-size:15px;letter-spacing:1px;margin:14px 0 8px;color:var(--muted)">Personnes exclues</div>
+          <div id="excl-list"></div>
         </div>
       </div>
     </div>
@@ -1573,7 +1586,7 @@ function showApp() {
   const mobileAdminBtn = document.getElementById('mobile-admin-btn');
   if(mobileAdminBtn) mobileAdminBtn.style.display = currentPointeur?.role==='admin' ? 'flex' : 'none';
   // Éléments réservés aux admins
-  const adminOnly = ['users-menu-item','export-menu-item','historique-menu-item','tombola-menu-item','mobile-users-btn','btn-del-invites'];
+  const adminOnly = ['users-menu-item','export-menu-item','historique-menu-item','tombola-menu-item','excl-menu-item','mobile-users-btn','btn-del-invites'];
   adminOnly.forEach(function(id){
     const elx = document.getElementById(id);
     if(elx) elx.style.display = currentPointeur?.role==='admin' ? '' : 'none';
@@ -2033,7 +2046,7 @@ function goPage(name, el) {
 }
 
 function navigateTo(name, pushState=true) {
-  if(currentPointeur && currentPointeur.role!=='admin' && ['users','export','historique','tombola'].indexOf(name)>=0){
+  if(currentPointeur && currentPointeur.role!=='admin' && ['users','export','historique','tombola','tombola-excl'].indexOf(name)>=0){
     toast('Section réservée aux administrateurs','error');
     return;
   }
@@ -2050,12 +2063,13 @@ function navigateTo(name, pushState=true) {
   // Sync bottom nav
   const navItems = document.querySelectorAll('.mobile-nav-item');
   if(idx>=0 && navItems[idx]) navItems[idx].classList.add('active');
-  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte',historique:'Historique',parkings:'Parkings',tombola:'🎰 Tombola','parking-pointeur':'Parking'};
+  const titles={dashboard:'Dashboard',evenements:'Événements',pointage:'Pointage',users:'Salariés',export:'Export',moncompte:'Mon compte',historique:'Historique',parkings:'Parkings',tombola:'🎰 Tombola','tombola-excl':'🚫 Exclusions','parking-pointeur':'Parking'};
   document.getElementById('top-title').innerHTML=`<span>${titles[name]||name}</span>`;
   if(name==='moncompte') renderMonCompte();
   if(name==='historique') loadHistorique();
   if(name==='parkings') renderParkings();
   if(name==='tombola') initTombolaPage();
+  if(name==='tombola-excl') initExclusionsPage();
   if(name==='dashboard'){
     fetch(api('parking_sessions'),{headers:H()}).then(r=>r.json()).then(function(d){
       if(Array.isArray(d)){ parkingSessions=d; renderDashboard(); }
@@ -3253,7 +3267,7 @@ function chargerTombola(){
   var presents=presences.filter(function(p){return p.evenement_id===evId&&p.present;}).length;
   var nbExclus=tombolaExclusions.filter(function(x){return x.evenement_id===evId;}).length;
   var status=document.getElementById('tombola-status');
-  if(status) status.textContent=(presents-nbExclus)+' éligibles · '+gagnants.length+' gagnant(s)'+(nbExclus?' · '+nbExclus+' exclu(s)':'');
+  if(status) status.textContent=(presents-nbExclus)+' éligibles · '+gagnants.length+' gagnant(s)';
   afficherGagnants(evId);
 }
 
@@ -3738,8 +3752,27 @@ async function supprimerInvitesSelectionnes(){
   renderDashboard();
 }
 
+function initExclusionsPage(){
+  var sel=document.getElementById('excl-event-sel');
+  if(!sel) return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">Choisir un événement</option>'+events.map(function(ev){return '<option value="'+ev.id+'">'+esc(ev.nom)+(ev.date?' · '+fmtDate(ev.date):'')+'</option>';}).join('');
+  if(cur) sel.value=cur;
+  else if(events.length===1) sel.value=events[0].id;
+  if(sel.value) chargerExclusions();
+}
+
+function chargerExclusions(){
+  var evId=document.getElementById('excl-event-sel').value;
+  if(!evId){document.getElementById('excl-list').innerHTML='';return;}
+  fetch(api('tombola_exclusions')+'?evenement_id=eq.'+evId,{headers:H()}).then(function(r){return r.json();}).then(function(d){
+    if(Array.isArray(d)) tombolaExclusions=d;
+    renderExclList();
+  }).catch(function(){});
+}
+
 function renderExclSuggestions(){
-  var evId=document.getElementById('tombola-event-sel').value;
+  var evId=document.getElementById('excl-event-sel').value;
   var box=document.getElementById('excl-suggestions');
   if(!evId||!box) return;
   var q=(document.getElementById('excl-search').value||'').toLowerCase().trim();
@@ -3760,7 +3793,7 @@ function renderExclSuggestions(){
 }
 
 async function exclureTombola(userId){
-  var evId=document.getElementById('tombola-event-sel').value;
+  var evId=document.getElementById('excl-event-sel').value;
   if(!evId) return;
   try{
     var r=await fetch(api('tombola_exclusions'),{method:'POST',headers:H(),body:JSON.stringify({evenement_id:evId,user_id:userId})});
@@ -3770,7 +3803,6 @@ async function exclureTombola(userId){
     document.getElementById('excl-search').value='';
     document.getElementById('excl-suggestions').innerHTML='';
     renderExclList();
-    chargerTombola();
     var u=users.find(function(x){return x.id===userId;});
     toast((u?u.nom+' '+u.prenom:'Personne')+' exclu(e) du tirage','info');
   }catch(e){toast('Erreur : '+e.message,'error');}
@@ -3781,13 +3813,12 @@ async function reintegrerTombola(exclId){
     await fetch(api('tombola_exclusions')+'?id=eq.'+exclId,{method:'DELETE',headers:H()});
     tombolaExclusions=tombolaExclusions.filter(function(x){return x.id!==exclId;});
     renderExclList();
-    chargerTombola();
     toast('Personne réintégrée au tirage','success');
   }catch(e){toast('Erreur : '+e.message,'error');}
 }
 
 function renderExclList(){
-  var evId=document.getElementById('tombola-event-sel');
+  var evId=document.getElementById('excl-event-sel');
   var list=document.getElementById('excl-list');
   if(!evId||!evId.value||!list) return;
   var exclus=tombolaExclusions.filter(function(x){return x.evenement_id===evId.value;});
