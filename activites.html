@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Activités EFI</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#05050f;--surface:#111124;--surface2:#191930;--border:rgba(255,255,255,.09);--muted:rgba(255,255,255,.45);--text:#f0f0f8;--accent:#e8251a;--success:#2dd4a0;--warn:#ff6b35;--gold:#ffd166}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:80px}
+.hidden{display:none!important}
+.wrap{max-width:520px;margin:0 auto;padding:18px 14px}
+h1{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px}
+.logo{width:50px;height:50px;border-radius:13px;background:linear-gradient(135deg,var(--accent),#c41d13);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px;box-shadow:0 10px 30px rgba(232,37,26,.35)}
+input,textarea,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;margin-bottom:10px;outline:none;font-family:inherit}
+label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+.btn{padding:12px 16px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff;width:100%}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.btn-sm{padding:8px 12px;font-size:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.badge{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700}
+.badge-attente{background:rgba(255,107,53,.15);color:var(--warn)}
+.badge-officiel{background:rgba(255,209,102,.15);color:var(--gold)}
+.bar{height:7px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin:8px 0 4px}
+.fill{height:100%;border-radius:4px;transition:width .4s}
+.tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,22,.97);border-top:1px solid var(--border);display:flex;z-index:50;backdrop-filter:blur(10px)}
+.tab{flex:1;padding:11px 4px 14px;text-align:center;font-size:10px;color:var(--muted);cursor:pointer;position:relative}
+.tab.active{color:var(--accent)}
+.tab .ic{font-size:20px;display:block;margin-bottom:2px}
+.tab .bdg{position:absolute;top:6px;right:calc(50% - 20px);background:var(--accent);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);padding:11px 18px;border-radius:10px;font-size:13px;z-index:100;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.empty{text-align:center;color:var(--muted);padding:36px 16px;font-size:13px}
+.meta{font-size:12px;color:var(--muted)}
+.row-between{display:flex;justify-content:space-between;align-items:center}
+a{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div id="screen-auth" class="wrap" style="padding-top:40px">
+  <div class="logo">🎾</div>
+  <h1 style="text-align:center">ACTIVITÉS EFI</h1>
+  <div style="text-align:center;color:var(--muted);font-size:12px;margin-bottom:24px">Sorties & activités entre collègues</div>
+
+  <div id="form-login">
+    <label>Email</label><input type="email" id="login-email" placeholder="prenom.nom@efiautomotive.com">
+    <label>Mot de passe</label><input type="password" id="login-pwd">
+    <div id="login-err" style="color:var(--warn);font-size:12px;margin-bottom:8px"></div>
+    <button class="btn btn-primary" onclick="login()">Se connecter</button>
+    <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted)">Pas de compte ? <a href="#" onclick="toggleAuth();return false">Créer un compte</a></div>
+  </div>
+
+  <div id="form-signup" class="hidden">
+    <label>Nom</label><input id="su-nom">
+    <label>Prénom</label><input id="su-prenom">
+    <label>Email</label><input type="email" id="su-email">
+    <label>Téléphone (optionnel)</label><input type="tel" id="su-tel">
+    <label>Mot de passe</label><input type="password" id="su-pwd">
+    <div id="su-err" style="color:var(--warn);font-size:12px;margin-bottom:8px"></div>
+    <button class="btn btn-primary" onclick="signup()">Créer mon compte</button>
+    <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted)"><a href="#" onclick="toggleAuth();return false">← Retour connexion</a></div>
+  </div>
+</div>
+
+<div id="screen-wait" class="wrap hidden" style="padding-top:60px;text-align:center">
+  <div style="font-size:50px;margin-bottom:14px">⏳</div>
+  <h1>Compte en attente</h1>
+  <div style="color:var(--muted);font-size:13px;margin:12px 0 24px;line-height:1.6">Votre compte doit être approuvé par un administrateur.<br>Vous recevrez une notification dès que c'est fait.</div>
+  <button class="btn btn-ghost" onclick="checkMonStatut()">🔄 Vérifier maintenant</button>
+  <div style="margin-top:14px"><a href="#" onclick="logout();return false" style="color:var(--muted);font-size:12px">Se déconnecter</a></div>
+</div>
+
+<div id="screen-app" class="hidden">
+  <div class="wrap">
+    <div class="row-between" style="margin-bottom:14px">
+      <h1>ACTIVITÉS EFI</h1>
+      <div style="text-align:right">
+        <div id="user-nom" style="font-size:12px;font-weight:700"></div>
+        <a href="#" onclick="logout();return false" style="color:var(--muted);font-size:11px">Déconnexion</a>
+      </div>
+    </div>
+
+    <div id="tab-liste">
+      <div id="liste-activites"><div class="empty">Chargement…</div></div>
+    </div>
+
+    <div id="tab-creer" class="hidden">
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:12px" id="creer-titre">➕ Proposer une activité</div>
+        <input type="hidden" id="act-edit-id">
+        <label>Nom de l'activité *</label><input id="act-nom" placeholder="Marche, foot, resto...">
+        <label>Description</label><textarea id="act-desc" rows="2"></textarea>
+        <label>Date *</label><input type="date" id="act-date">
+        <div style="display:flex;gap:8px">
+          <div style="flex:1"><label>Début *</label><input type="time" id="act-hd"></div>
+          <div style="flex:1"><label>Fin</label><input type="time" id="act-hf"></div>
+        </div>
+        <label>Lieu</label><input id="act-lieu">
+        <div style="display:flex;gap:8px">
+          <div style="flex:1"><label>Tarif (€)</label><input type="number" id="act-tarif" min="0" step="0.5" value="0"></div>
+          <div style="flex:1"><label>Places max *</label><input type="number" id="act-max" min="1" value="20"></div>
+        </div>
+        <label>Lien de paiement (optionnel)</label><input type="url" id="act-lien" placeholder="https://...">
+        <label>Responsable</label><input id="act-resp">
+        <label>Téléphone responsable</label><input type="tel" id="act-resptel">
+        <div id="act-err" style="color:var(--warn);font-size:12px;margin-bottom:8px"></div>
+        <button class="btn btn-primary" onclick="creerActivite()" id="act-submit">Soumettre à validation</button>
+        <button class="btn btn-ghost hidden" style="width:100%;margin-top:8px" onclick="annulerEdition()" id="act-cancel">Annuler</button>
+      </div>
+    </div>
+
+    <div id="tab-notifs" class="hidden">
+      <div id="liste-notifs"><div class="empty">Aucune notification.</div></div>
+    </div>
+
+    <div id="tab-admin" class="hidden">
+      <div style="font-weight:700;margin-bottom:10px">👤 Comptes en attente</div>
+      <div id="admin-comptes"><div class="empty">Aucune demande.</div></div>
+      <div style="font-weight:700;margin:18px 0 10px">📋 Activités à valider</div>
+      <div id="admin-activites"><div class="empty">Aucune activité en attente.</div></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabbtn-liste" onclick="goTab('liste')"><span class="ic">🎾</span>Activités</div>
+    <div class="tab" id="tabbtn-creer" onclick="goTab('creer')"><span class="ic">➕</span>Créer</div>
+    <div class="tab" id="tabbtn-notifs" onclick="goTab('notifs')"><span class="ic">🔔</span>Notifs<span class="bdg hidden" id="badge-notifs">0</span></div>
+    <div class="tab hidden" id="tabbtn-admin" onclick="goTab('admin')"><span class="ic">🔑</span>Admin<span class="bdg hidden" id="badge-admin">0</span></div>
+  </div>
+</div>
+
+<script>
+var URL_='https://aygrpgccjzwdhwtqbotw.supabase.co';
+var KEY_='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3JwZ2Njanp3ZGh3dHFib3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTE0MDEsImV4cCI6MjA5NjE4NzQwMX0.KP9oXyPhvznoy-EzIQUIoYjCHfMUMtUwA59YnVmXm78';
+function api(t){return URL_+'/rest/v1/'+t;}
+function H(){return {'apikey':KEY_,'Authorization':'Bearer '+KEY_,'Content-Type':'application/json','Prefer':'return=representation'};}
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove();},3000);}
+
+var session=null, activites=[], inscriptions=[], notifs=[], comptesAttente=[], actsAttente=[];
+var notifTimer=null, lastNotifCount=0;
+
+function saveSession(){localStorage.setItem('act_session',JSON.stringify(session));}
+function loadSession(){try{session=JSON.parse(localStorage.getItem('act_session'));}catch(e){session=null;}}
+function logout(){session=null;localStorage.removeItem('act_session');if(notifTimer)clearInterval(notifTimer);show('auth');}
+
+function show(name){
+  ['auth','wait','app'].forEach(function(s){document.getElementById('screen-'+s).classList.add('hidden');});
+  document.getElementById('screen-'+name).classList.remove('hidden');
+}
+
+function toggleAuth(){
+  document.getElementById('form-login').classList.toggle('hidden');
+  document.getElementById('form-signup').classList.toggle('hidden');
+}
+
+async function signup(){
+  var nom=document.getElementById('su-nom').value.trim();
+  var prenom=document.getElementById('su-prenom').value.trim();
+  var email=document.getElementById('su-email').value.trim().toLowerCase();
+  var tel=document.getElementById('su-tel').value.trim();
+  var pwd=document.getElementById('su-pwd').value;
+  var err=document.getElementById('su-err');
+  err.textContent='';
+  if(!nom||!prenom||!email||!pwd){err.textContent='Champs obligatoires manquants.';return;}
+  if(pwd.length<4){err.textContent='Mot de passe trop court (min. 4).';return;}
+  try{
+    var chk=await fetch(api('comptes_activites')+'?email=eq.'+encodeURIComponent(email),{headers:H()}).then(function(r){return r.json();});
+    if(Array.isArray(chk)&&chk.length){err.textContent='Cet email est déjà utilisé.';return;}
+    var r=await fetch(api('comptes_activites'),{method:'POST',headers:H(),body:JSON.stringify({nom:nom,prenom:prenom,email:email,telephone:tel,mot_de_passe:btoa(pwd),statut:'en_attente'})});
+    if(!r.ok) throw new Error('Erreur serveur');
+    var nc=await r.json(); var compte=Array.isArray(nc)?nc[0]:nc;
+    await fetch(api('notifications_activites'),{method:'POST',headers:H(),body:JSON.stringify({pour_admin:true,message:'Nouveau compte à valider : '+prenom+' '+nom})});
+    session={type:'compte',id:compte.id,nom:nom,prenom:prenom,email:email,statut:'en_attente'};
+    saveSession();
+    show('wait');
+  }catch(e){err.textContent='Erreur : '+e.message;}
+}
+
+async function login(){
+  var email=document.getElementById('login-email').value.trim().toLowerCase();
+  var pwd=document.getElementById('login-pwd').value;
+  var err=document.getElementById('login-err');
+  err.textContent='';
+  if(!email||!pwd){err.textContent='Email et mot de passe requis.';return;}
+  try{
+    var r=await fetch(api('comptes_activites')+'?email=eq.'+encodeURIComponent(email),{headers:H()}).then(function(x){return x.json();});
+    if(Array.isArray(r)&&r.length){
+      var c=r[0];
+      if(c.mot_de_passe!==btoa(pwd)){err.textContent='Mot de passe incorrect.';return;}
+      session={type:'compte',id:c.id,nom:c.nom,prenom:c.prenom,email:c.email,statut:c.statut,is_admin:!!c.is_admin};
+      saveSession();
+      if(c.statut==='en_attente'){show('wait');return;}
+      if(c.statut==='refuse'){err.textContent='Compte refusé. Contactez un administrateur.';session=null;localStorage.removeItem('act_session');return;}
+      startApp();
+      return;
+    }
+    var p=await fetch(api('pointeurs')+'?email=eq.'+encodeURIComponent(email)+'&role=eq.admin',{headers:H()}).then(function(x){return x.json();});
+    if(Array.isArray(p)&&p.length){
+      var a=p[0];
+      if(a.pwd_hash!==btoa(pwd)){err.textContent='Mot de passe incorrect.';return;}
+      session={type:'admin',id:a.id,nom:a.nom,prenom:a.prenom||'',email:a.email,statut:'approuve',is_admin:true};
+      saveSession();
+      startApp();
+      return;
+    }
+    err.textContent='Aucun compte avec cet email.';
+  }catch(e){err.textContent='Erreur : '+e.message;}
+}
+
+async function checkMonStatut(){
+  if(!session||session.type!=='compte'){show('auth');return;}
+  var r=await fetch(api('comptes_activites')+'?id=eq.'+session.id,{headers:H()}).then(function(x){return x.json();});
+  if(Array.isArray(r)&&r.length){
+    session.statut=r[0].statut;
+    session.is_admin=!!r[0].is_admin;
+    saveSession();
+    if(session.statut==='approuve'){toast('Compte approuvé ! 🎉');startApp();}
+    else toast('Toujours en attente…');
+  }
+}
+
+function isAdmin(){return session&&(session.type==='admin'||session.is_admin);}
+
+function startApp(){
+  show('app');
+  document.getElementById('user-nom').textContent=(session.prenom||'')+' '+session.nom+(isAdmin()?' 🔑':'');
+  if(isAdmin()) document.getElementById('tabbtn-admin').classList.remove('hidden');
+  if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
+  chargerTout();
+  if(isAdmin()) chargerAdmin();
+  if(notifTimer) clearInterval(notifTimer);
+  notifTimer=setInterval(pollNotifs,30000);
+}
+
+function goTab(name){
+  ['liste','creer','notifs','admin'].forEach(function(t){
+    document.getElementById('tab-'+t).classList.add('hidden');
+    var b=document.getElementById('tabbtn-'+t);
+    if(b) b.classList.remove('active');
+  });
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  document.getElementById('tabbtn-'+name).classList.add('active');
+  if(name==='notifs') marquerNotifsLues();
+  if(name==='admin') chargerAdmin();
+  if(name==='liste') chargerTout();
+}
+
+async function chargerTout(){
+  try{
+    var r=await Promise.all([
+      fetch(api('activites')+'?order=date.asc',{headers:H()}).then(function(x){return x.json();}),
+      fetch(api('inscriptions_activites'),{headers:H()}).then(function(x){return x.json();})
+    ]);
+    activites=Array.isArray(r[0])?r[0]:[];
+    inscriptions=Array.isArray(r[1])?r[1]:[];
+    renderListe();
+    pollNotifs();
+  }catch(e){}
+}
+
+function renderListe(){
+  var box=document.getElementById('liste-activites');
+  var today=new Date().toISOString().slice(0,10);
+  var visibles=activites.filter(function(a){
+    if(a.statut==='actif'&&a.date>=today) return true;
+    if(a.statut==='en_attente'&&(a.createur_id===session.id||isAdmin())) return true;
+    return false;
+  });
+  if(!visibles.length){box.innerHTML='<div class="empty">Aucune activité à venir.<br>Proposez la vôtre dans l\u2019onglet ➕ !</div>';return;}
+  box.innerHTML=visibles.map(function(a){
+    var insc=inscriptions.filter(function(i){return i.activite_id===a.id;});
+    var mine=insc.some(function(i){return i.compte_id===session.id;});
+    var pct=Math.min(100,Math.round(insc.length/a.max_participants*100));
+    var complet=insc.length>=a.max_participants;
+    var col=complet?'var(--warn)':pct>=70?'var(--gold)':'var(--success)';
+    var h='<div class="card">';
+    h+='<div class="row-between"><div style="font-weight:700;font-size:16px">'+esc(a.nom)+'</div>';
+    if(a.statut==='en_attente') h+='<span class="badge badge-attente">⏳ En validation</span>';
+    else if(a.type==='admin') h+='<span class="badge badge-officiel">⭐ EFI</span>';
+    h+='</div>';
+    h+='<div class="meta" style="margin:6px 0">📅 '+esc(a.date)+' · '+esc(a.heure_debut||'')+(a.heure_fin?' - '+esc(a.heure_fin):'')+'</div>';
+    if(a.lieu) h+='<div class="meta">📍 '+esc(a.lieu)+'</div>';
+    if(a.description) h+='<div style="font-size:13px;margin:8px 0;color:rgba(255,255,255,.75)">'+esc(a.description)+'</div>';
+    var tarif=parseFloat(a.tarif)||0;
+    h+='<div class="meta" style="margin-top:6px">💶 '+(tarif>0?tarif+' €':'Gratuit');
+    if(a.lien_paiement) h+=' · <a href="'+esc(a.lien_paiement)+'" target="_blank" rel="noopener">Payer en ligne</a>';
+    h+='</div>';
+    if(a.responsable_nom) h+='<div class="meta">👤 '+esc(a.responsable_nom)+(a.responsable_tel?' · 📞 <a href="tel:'+esc(a.responsable_tel)+'">'+esc(a.responsable_tel)+'</a>':'')+'</div>';
+    h+='<div class="bar"><div class="fill" style="width:'+pct+'%;background:'+col+'"></div></div>';
+    h+='<div class="row-between"><div class="meta">'+insc.length+' / '+a.max_participants+' inscrits'+(complet?' · COMPLET':'')+'</div>';
+    if(a.statut==='actif'){
+      if(mine) h+='<button class="btn btn-ghost btn-sm" onclick="desinscrire(\''+a.id+'\')">Se désinscrire</button>';
+      else if(!complet) h+='<button class="btn btn-primary btn-sm" style="width:auto" onclick="inscrire(\''+a.id+'\')">S\u2019inscrire</button>';
+    }
+    h+='</div>';
+    if(mine&&a.statut==='actif') h+='<div style="font-size:11px;color:var(--success);margin-top:6px">✅ Vous êtes inscrit(e)</div>';
+    if(a.createur_id===session.id||isAdmin()){
+      h+='<div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">';
+      h+='<button class="btn btn-ghost btn-sm" onclick="editerActivite(\''+a.id+'\')">✏️ Modifier</button>';
+      h+='<button class="btn btn-ghost btn-sm" style="color:var(--warn)" onclick="supprimerActivite(\''+a.id+'\')">🗑 Supprimer</button>';
+      h+='<button class="btn btn-ghost btn-sm" onclick="voirInscrits(\''+a.id+'\')">👥 Inscrits</button>';
+      h+='</div>';
+    }
+    h+='</div>';
+    return h;
+  }).join('');
+}
+
+async function inscrire(actId){
+  try{
+    var r=await fetch(api('inscriptions_activites'),{method:'POST',headers:H(),body:JSON.stringify({activite_id:actId,compte_id:session.id})});
+    if(!r.ok){var e=await r.json();throw new Error(e.message||'Erreur');}
+    var ni=await r.json();
+    inscriptions.push(Array.isArray(ni)?ni[0]:ni);
+    renderListe();
+    toast('Inscription confirmée ! ✅');
+  }catch(e){toast('Erreur : '+e.message);}
+}
+
+async function desinscrire(actId){
+  if(!confirm('Se désinscrire de cette activité ?')) return;
+  try{
+    await fetch(api('inscriptions_activites')+'?activite_id=eq.'+actId+'&compte_id=eq.'+session.id,{method:'DELETE',headers:H()});
+    inscriptions=inscriptions.filter(function(i){return !(i.activite_id===actId&&i.compte_id===session.id);});
+    renderListe();
+    toast('Désinscription faite.');
+  }catch(e){toast('Erreur : '+e.message);}
+}
+
+async function voirInscrits(actId){
+  var insc=inscriptions.filter(function(i){return i.activite_id===actId;});
+  if(!insc.length){alert('Aucun inscrit pour le moment.');return;}
+  var ids=insc.map(function(i){return i.compte_id;});
+  var r=await fetch(api('comptes_activites')+'?id=in.('+ids.join(',')+')&select=nom,prenom,telephone',{headers:H()}).then(function(x){return x.json();});
+  var lignes=(Array.isArray(r)?r:[]).map(function(c){return '• '+c.prenom+' '+c.nom+(c.telephone?' ('+c.telephone+')':'');});
+  alert('Inscrits ('+lignes.length+') :\n\n'+lignes.join('\n'));
+}
+
+function annulerEdition(){
+  document.getElementById('act-edit-id').value='';
+  ['act-nom','act-desc','act-date','act-hd','act-hf','act-lieu','act-lien','act-resp','act-resptel'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('act-tarif').value='0';
+  document.getElementById('act-max').value='20';
+  document.getElementById('creer-titre').textContent='➕ Proposer une activité';
+  document.getElementById('act-submit').textContent='Soumettre à validation';
+  document.getElementById('act-cancel').classList.add('hidden');
+  goTab('liste');
+}
+
+function editerActivite(actId){
+  var a=activites.find(function(x){return x.id===actId;});
+  if(!a) return;
+  document.getElementById('act-edit-id').value=a.id;
+  document.getElementById('act-nom').value=a.nom||'';
+  document.getElementById('act-desc').value=a.description||'';
+  document.getElementById('act-date').value=a.date||'';
+  document.getElementById('act-hd').value=a.heure_debut||'';
+  document.getElementById('act-hf').value=a.heure_fin||'';
+  document.getElementById('act-lieu').value=a.lieu||'';
+  document.getElementById('act-tarif').value=a.tarif||0;
+  document.getElementById('act-max').value=a.max_participants||20;
+  document.getElementById('act-lien').value=a.lien_paiement||'';
+  document.getElementById('act-resp').value=a.responsable_nom||'';
+  document.getElementById('act-resptel').value=a.responsable_tel||'';
+  document.getElementById('creer-titre').textContent='✏️ Modifier l\u2019activité';
+  document.getElementById('act-submit').textContent='Enregistrer';
+  document.getElementById('act-cancel').classList.remove('hidden');
+  goTab('creer');
+}
+
+async function creerActivite(){
+  var editId=document.getElementById('act-edit-id').value;
+  var nom=document.getElementById('act-nom').value.trim();
+  var date=document.getElementById('act-date').value;
+  var hd=document.getElementById('act-hd').value;
+  var maxP=parseInt(document.getElementById('act-max').value);
+  var err=document.getElementById('act-err');
+  err.textContent='';
+  if(!nom||!date||!hd||!maxP){err.textContent='Nom, date, heure de début et places max sont obligatoires.';return;}
+  var payload={
+    nom:nom,
+    description:document.getElementById('act-desc').value.trim(),
+    date:date, heure_debut:hd,
+    heure_fin:document.getElementById('act-hf').value||null,
+    lieu:document.getElementById('act-lieu').value.trim(),
+    tarif:parseFloat(document.getElementById('act-tarif').value)||0,
+    max_participants:maxP,
+    lien_paiement:document.getElementById('act-lien').value.trim()||null,
+    responsable_nom:document.getElementById('act-resp').value.trim()||(session.prenom+' '+session.nom),
+    responsable_tel:document.getElementById('act-resptel').value.trim()
+  };
+  try{
+    if(editId){
+      var r=await fetch(api('activites')+'?id=eq.'+editId,{method:'PATCH',headers:H(),body:JSON.stringify(payload)});
+      if(!r.ok) throw new Error('Erreur serveur');
+      toast('Activité modifiée ✅');
+    } else {
+      payload.createur_id=session.type==='compte'?session.id:null;
+      payload.type=isAdmin()?'admin':'salarie';
+      payload.statut=isAdmin()?'actif':'en_attente';
+      var r2=await fetch(api('activites'),{method:'POST',headers:H(),body:JSON.stringify(payload)});
+      if(!r2.ok) throw new Error('Erreur serveur');
+      if(!isAdmin()){
+        await fetch(api('notifications_activites'),{method:'POST',headers:H(),body:JSON.stringify({pour_admin:true,message:'Activité à valider : « '+nom+' » par '+session.prenom+' '+session.nom})});
+        toast('Activité soumise à validation ⏳');
+      } else toast('Activité créée ✅');
+    }
+    annulerEdition();
+    chargerTout();
+  }catch(e){err.textContent='Erreur : '+e.message;}
+}
+
+async function supprimerActivite(actId){
+  if(!confirm('Supprimer cette activité et toutes ses inscriptions ?')) return;
+  try{
+    await fetch(api('activites')+'?id=eq.'+actId,{method:'DELETE',headers:H()});
+    activites=activites.filter(function(a){return a.id!==actId;});
+    renderListe();
+    toast('Activité supprimée.');
+  }catch(e){toast('Erreur : '+e.message);}
+}
+
+async function pollNotifs(){
+  if(!session) return;
+  try{
+    var q=isAdmin()?'?or=(pour_admin.eq.true,compte_id.eq.'+session.id+')':'?compte_id=eq.'+session.id;
+    var r=await fetch(api('notifications_activites')+q+'&order=created_at.desc&limit=30',{headers:H()}).then(function(x){return x.json();});
+    notifs=Array.isArray(r)?r:[];
+    var nonLues=notifs.filter(function(n){return !n.lu;});
+    var badge=document.getElementById('badge-notifs');
+    if(nonLues.length){badge.textContent=nonLues.length;badge.classList.remove('hidden');}
+    else badge.classList.add('hidden');
+    if(nonLues.length>lastNotifCount&&'Notification' in window&&Notification.permission==='granted'){
+      var derniere=nonLues[0];
+      try{new Notification('Activités EFI',{body:derniere.message});}catch(e){}
+    }
+    lastNotifCount=nonLues.length;
+    renderNotifs();
+    if(isAdmin()) majBadgeAdmin();
+  }catch(e){}
+}
+
+function renderNotifs(){
+  var box=document.getElementById('liste-notifs');
+  if(!notifs.length){box.innerHTML='<div class="empty">Aucune notification.</div>';return;}
+  box.innerHTML=notifs.map(function(n){
+    var d=new Date(n.created_at);
+    var dateStr=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+    return '<div class="card" style="'+(n.lu?'opacity:.55':'border-color:rgba(232,37,26,.35)')+'">'
+      +'<div style="font-size:13px">'+esc(n.message)+'</div>'
+      +'<div class="meta" style="margin-top:4px">'+dateStr+(n.lu?'':' · <b style="color:var(--accent)">Nouveau</b>')+'</div></div>';
+  }).join('');
+}
+
+async function marquerNotifsLues(){
+  var nonLues=notifs.filter(function(n){return !n.lu;});
+  for(var i=0;i<nonLues.length;i++){
+    try{await fetch(api('notifications_activites')+'?id=eq.'+nonLues[i].id,{method:'PATCH',headers:H(),body:JSON.stringify({lu:true})});}catch(e){}
+  }
+  notifs=notifs.map(function(n){n.lu=true;return n;});
+  document.getElementById('badge-notifs').classList.add('hidden');
+  lastNotifCount=0;
+  renderNotifs();
+}
+
+async function chargerAdmin(){
+  if(!isAdmin()) return;
+  try{
+    var r=await Promise.all([
+      fetch(api('comptes_activites')+'?statut=eq.en_attente&order=created_at.asc',{headers:H()}).then(function(x){return x.json();}),
+      fetch(api('activites')+'?statut=eq.en_attente&order=created_at.asc',{headers:H()}).then(function(x){return x.json();})
+    ]);
+    comptesAttente=Array.isArray(r[0])?r[0]:[];
+    actsAttente=Array.isArray(r[1])?r[1]:[];
+    renderAdmin();
+    majBadgeAdmin();
+  }catch(e){}
+}
+
+function majBadgeAdmin(){
+  var b=document.getElementById('badge-admin');
+  var total=comptesAttente.length+actsAttente.length;
+  if(total){b.textContent=total;b.classList.remove('hidden');}
+  else b.classList.add('hidden');
+}
+
+function renderAdmin(){
+  var bc=document.getElementById('admin-comptes');
+  if(!comptesAttente.length) bc.innerHTML='<div class="empty">Aucune demande.</div>';
+  else bc.innerHTML=comptesAttente.map(function(c){
+    return '<div class="card"><div style="font-weight:700">'+esc(c.prenom)+' '+esc(c.nom)+'</div>'
+      +'<div class="meta">'+esc(c.email)+(c.telephone?' · '+esc(c.telephone):'')+'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:10px">'
+      +'<button class="btn btn-primary btn-sm" style="width:auto" onclick="validerCompte(\''+c.id+'\',true)">✅ Approuver</button>'
+      +'<button class="btn btn-ghost btn-sm" style="color:var(--warn)" onclick="validerCompte(\''+c.id+'\',false)">❌ Refuser</button>'
+      +'</div></div>';
+  }).join('');
+  var ba=document.getElementById('admin-activites');
+  if(!actsAttente.length) ba.innerHTML='<div class="empty">Aucune activité en attente.</div>';
+  else ba.innerHTML=actsAttente.map(function(a){
+    return '<div class="card"><div style="font-weight:700">'+esc(a.nom)+'</div>'
+      +'<div class="meta">📅 '+esc(a.date)+' '+esc(a.heure_debut||'')+' · 👥 '+a.max_participants+' places'+(parseFloat(a.tarif)>0?' · '+a.tarif+' €':'')+'</div>'
+      +(a.description?'<div style="font-size:12px;margin-top:4px;color:rgba(255,255,255,.7)">'+esc(a.description)+'</div>':'')
+      +'<div style="display:flex;gap:8px;margin-top:10px">'
+      +'<button class="btn btn-primary btn-sm" style="width:auto" onclick="validerActivite(\''+a.id+'\',true)">✅ Publier</button>'
+      +'<button class="btn btn-ghost btn-sm" style="color:var(--warn)" onclick="validerActivite(\''+a.id+'\',false)">❌ Refuser</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+async function validerCompte(id, ok){
+  try{
+    await fetch(api('comptes_activites')+'?id=eq.'+id,{method:'PATCH',headers:H(),body:JSON.stringify({statut:ok?'approuve':'refuse'})});
+    await fetch(api('notifications_activites'),{method:'POST',headers:H(),body:JSON.stringify({compte_id:id,message:ok?'🎉 Votre compte a été approuvé ! Vous pouvez maintenant vous inscrire aux activités.':'Votre demande de compte a été refusée.'})});
+    comptesAttente=comptesAttente.filter(function(x){return x.id!==id;});
+    renderAdmin();majBadgeAdmin();
+    toast(ok?'Compte approuvé':'Compte refusé');
+  }catch(e){toast('Erreur : '+e.message);}
+}
+
+async function validerActivite(id, ok){
+  try{
+    await fetch(api('activites')+'?id=eq.'+id,{method:'PATCH',headers:H(),body:JSON.stringify({statut:ok?'actif':'refuse'})});
+    var a=actsAttente.find(function(x){return x.id===id;});
+    if(a&&a.createur_id){
+      await fetch(api('notifications_activites'),{method:'POST',headers:H(),body:JSON.stringify({compte_id:a.createur_id,message:ok?'🎉 Votre activité « '+a.nom+' » a été validée et est maintenant visible !':'Votre activité « '+a.nom+' » a été refusée.'})});
+    }
+    actsAttente=actsAttente.filter(function(x){return x.id!==id;});
+    renderAdmin();majBadgeAdmin();
+    chargerTout();
+    toast(ok?'Activité publiée':'Activité refusée');
+  }catch(e){toast('Erreur : '+e.message);}
+}
+
+loadSession();
+if(session){
+  if(session.type==='compte'&&session.statut==='en_attente'){show('wait');checkMonStatut();}
+  else startApp();
+} else show('auth');
+</script>
+</body>
+</html>
