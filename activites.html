@@ -167,7 +167,7 @@ async function signup(){
   if(!nom||!prenom||!email||!pwd){err.textContent='Champs obligatoires manquants.';return;}
   if(pwd.length<4){err.textContent='Mot de passe trop court (min. 4).';return;}
   try{
-    var chk=await fetch(api('comptes_activites')+'?email=eq.'+encodeURIComponent(email),{headers:H()}).then(function(r){return r.json();});
+    var chk=await fetch(api('comptes_activites')+'?email=ilike.'+encodeURIComponent(email),{headers:H()}).then(function(r){return r.json();});
     if(Array.isArray(chk)&&chk.length){err.textContent='Cet email est déjà utilisé.';return;}
     var r=await fetch(api('comptes_activites'),{method:'POST',headers:H(),body:JSON.stringify({nom:nom,prenom:prenom,email:email,telephone:tel,mot_de_passe:btoa(pwd),statut:'en_attente'})});
     if(!r.ok) throw new Error('Erreur serveur');
@@ -186,7 +186,7 @@ async function login(){
   err.textContent='';
   if(!email||!pwd){err.textContent='Email et mot de passe requis.';return;}
   try{
-    var r=await fetch(api('comptes_activites')+'?email=eq.'+encodeURIComponent(email),{headers:H()}).then(function(x){return x.json();});
+    var r=await fetch(api('comptes_activites')+'?email=ilike.'+encodeURIComponent(email),{headers:H()}).then(function(x){return x.json();});
     if(Array.isArray(r)&&r.length){
       var c=r[0];
       if(c.mot_de_passe!==btoa(pwd)){err.textContent='Mot de passe incorrect.';return;}
@@ -197,7 +197,7 @@ async function login(){
       startApp();
       return;
     }
-    var p=await fetch(api('pointeurs')+'?email=eq.'+encodeURIComponent(email)+'&role=eq.admin',{headers:H()}).then(function(x){return x.json();});
+    var p=await fetch(api('pointeurs')+'?email=ilike.'+encodeURIComponent(email)+'&role=eq.admin',{headers:H()}).then(function(x){return x.json();});
     if(Array.isArray(p)&&p.length){
       var a=p[0];
       if(a.pwd_hash!==btoa(pwd)){err.textContent='Mot de passe incorrect.';return;}
